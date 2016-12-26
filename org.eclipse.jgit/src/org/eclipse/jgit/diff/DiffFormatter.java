@@ -728,7 +728,7 @@ public class DiffFormatter implements AutoCloseable {
 		// header lines, but avoiding its hunks. Instead we recreate
 		// the hunks from the text instances we have been supplied.
 		//
-		System.out.println("testttttttttt!!!!!!!!!!!1");
+		System.out.println("testttttttttt!!!!!!!!!!!s"); //$NON-NLS-1$
 		System.out.println(head);
 		final int start = head.getStartOffset();
 		int end = head.getEndOffset();
