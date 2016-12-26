@@ -1,0 +1,5 @@
+org.eclipse.jgit.console
+org.eclipse.jgit.pgm
+org.eclipse.jgit.pgm.debug
+org.eclipse.jgit.pgm.internal
+org.eclipse.jgit.pgm.opt

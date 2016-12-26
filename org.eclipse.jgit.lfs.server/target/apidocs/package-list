@@ -1,0 +1,4 @@
+org.eclipse.jgit.lfs.server
+org.eclipse.jgit.lfs.server.fs
+org.eclipse.jgit.lfs.server.internal
+org.eclipse.jgit.lfs.server.s3
