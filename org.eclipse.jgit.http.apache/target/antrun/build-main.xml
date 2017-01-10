@@ -3,7 +3,7 @@
 <target name="main" if="">
   <copy file="META-INF/MANIFEST.MF" tofile="/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.http.apache/target/META-INF/MANIFEST.MF" overwrite="true"/>
   <replace file="/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.http.apache/target/META-INF/MANIFEST.MF">
-    <replacefilter value=".201612260334" token=".qualifier"/>
+    <replacefilter value=".201701100607" token=".qualifier"/>
   </replace>
 </target>
 </project>

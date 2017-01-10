@@ -88,8 +88,10 @@ public class RawText extends Sequence {
 	 *            through cached arrays is safe.
 	 */
 	public RawText(final byte[] input) {
+		System.out.println("\nRawText!!!!!\n" + input); //$NON-NLS-1$
 		content = input;
 		lines = RawParseUtils.lineMap(content, 0, content.length);
+		//System.out.println("lines is " + lines); //$NON-NLS-1$
 	}
 
 	/**
@@ -139,6 +141,11 @@ public class RawText extends Sequence {
 		int end = getEnd(i);
 		if (content[end - 1] == '\n')
 			end--;
+
+		//System.out.println("content is " + content); //$NON-NLS-1$
+
+		// out.write(content);
+
 		out.write(content, start, end - start);
 	}
 

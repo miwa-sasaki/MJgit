@@ -1,0 +1,15 @@
+package astnode;
+
+public class test {
+	public static void main(String[] args) {
+		
+		//test
+		int i;
+		/*
+		 *テスト 
+		 */
+		
+		String ast = "@SuppressWarnings(\"unused\")" + "aiu" ;
+    	ast = ast.replaceFirst("@SuppressWarnings(\"unused\")", "");
+	}
+}

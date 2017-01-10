@@ -212,6 +212,12 @@ class Diff extends TextBuiltin {
 				outw.flush();
 
 			} else {
+
+				/*
+				 * System.out.println("oldTree is " + oldTree + "\nnewTree is "
+				 * //$NON-NLS-1$ //$NON-NLS-2$ + newTree);
+				 */
+
 				diffFmt.format(oldTree, newTree);
 				diffFmt.flush();
 			}

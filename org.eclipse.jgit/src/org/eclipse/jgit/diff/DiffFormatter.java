@@ -55,8 +55,13 @@ import static org.eclipse.jgit.lib.Constants.encode;
 import static org.eclipse.jgit.lib.Constants.encodeASCII;
 import static org.eclipse.jgit.lib.FileMode.GITLINK;
 
+//import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+//import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+//import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
@@ -492,6 +497,8 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	public List<DiffEntry> scan(AbstractTreeIterator a, AbstractTreeIterator b)
 			throws IOException {
+		//System.out.println("start scan \na is " + a + "\nb is" + b); //$NON-NLS-1$ //$NON-NLS-2$
+
 		assertHaveReader();
 
 		TreeWalk walk = new TreeWalk(reader);
@@ -530,6 +537,8 @@ public class DiffFormatter implements AutoCloseable {
 		} else if (renameDetector != null)
 			files = detectRenames(files);
 
+		System.out.println("files is" + files); //$NON-NLS-1$
+		// filesは変化があったファイル達
 		return files;
 	}
 
@@ -648,6 +657,7 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	public void format(AbstractTreeIterator a, AbstractTreeIterator b)
 			throws IOException {
+		// scan(a, b)の返り値 = a,b間で変更のあったファイル名の集合
 		format(scan(a, b));
 	}
 
@@ -664,6 +674,7 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	public void format(List<? extends DiffEntry> entries) throws IOException {
 		for (DiffEntry ent : entries)
+			// 変更があったファイル一つ一つについてformat()していく
 			format(ent);
 	}
 
@@ -677,7 +688,16 @@ public class DiffFormatter implements AutoCloseable {
 	 *             be written to.
 	 */
 	public void format(DiffEntry ent) throws IOException {
+
+		//System.out.println("ent is " + ent); //$NON-NLS-1$
+
 		FormatResult res = createFormatResult(ent);
+		//System.out.println("res is " + res + "\nres.header is " + res.header); //$NON-NLS-1$ //$NON-NLS-2$
+		//System.out.println("\nres.a is " + res.a + "\nres.b is " + res.b);//$NON-NLS-1$ //$NON-NLS-2$
+
+		// res.a.writeLine(out, );
+		// res.b.writeLine(out, );
+
 		format(res.header, res.a, res.b);
 	}
 
@@ -727,9 +747,6 @@ public class DiffFormatter implements AutoCloseable {
 		// Reuse the existing FileHeader as-is by blindly copying its
 		// header lines, but avoiding its hunks. Instead we recreate
 		// the hunks from the text instances we have been supplied.
-		//
-		System.out.println("testttttttttt!!!!!!!!!!!s"); //$NON-NLS-1$
-		System.out.println(head);
 		final int start = head.getStartOffset();
 		int end = head.getEndOffset();
 		if (!head.getHunks().isEmpty())
@@ -800,6 +817,7 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	protected void writeContextLine(final RawText text, final int line)
 			throws IOException {
+		//System.out.println("text is " + text); //$NON-NLS-1$
 		writeLine(' ', text, line);
 	}
 
@@ -905,6 +923,8 @@ public class DiffFormatter implements AutoCloseable {
 	protected void writeLine(final char prefix, final RawText text,
 			final int cur) throws IOException {
 		out.write(prefix);
+
+		// 出力させている命令？
 		text.writeLine(out, cur);
 		out.write('\n');
 	}
@@ -980,6 +1000,19 @@ public class DiffFormatter implements AutoCloseable {
 			} else {
 				res.a = new RawText(aRaw);
 				res.b = new RawText(bRaw);
+
+				/*
+				 * System.out.println("aRaw is "); //$NON-NLS-1$
+				 * out.write(aRaw); System.out.println("bRaw is ");
+				 * //$NON-NLS-1$ out.write(bRaw);
+				 */
+
+				// RawTextを外部に書き出す
+				String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
+				export("aRaw1", aRawS); //$NON-NLS-1$
+				String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
+				export("bRaw1", bRawS); //$NON-NLS-1$
+
 				editList = diff(res.a, res.b);
 				type = PatchType.UNIFIED;
 
@@ -999,6 +1032,51 @@ public class DiffFormatter implements AutoCloseable {
 
 		res.header = new FileHeader(buf.toByteArray(), editList, type);
 		return res;
+	}
+
+	// 外部ファイルのチェック
+	private static boolean checkBeforeWritefile(File file) {
+		if (file.exists()) {
+			if (file.isFile() && file.canWrite()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param filename
+	 * @param body
+	 */
+	// 解析結果を外部ファイルに出力するメソッド
+	public static void export(String filename, String body) {
+		// ファイル名を編集
+		filename = "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/" + filename + ".txt"; //$NON-NLS-1$ //$NON-NLS-2$
+		// ファイル作成
+		File newfile = new File(filename);
+		try {
+			if (newfile.createNewFile()) {
+				// System.out.println("ファイルの作成に成功しました");
+			} else {
+				// System.out.println("ファイルの作成に失敗しました");
+			}
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+		try {
+			File file = new File(filename);
+
+			if (checkBeforeWritefile(file)) {
+				FileWriter filewriter = new FileWriter(file);
+				filewriter.write(body);
+				System.out.println(filename + "に書き込み完了"); //$NON-NLS-1$
+				filewriter.close();
+			} else {
+				System.out.println(filename + "に書き込めません"); //$NON-NLS-1$
+			}
+		} catch (IOException e) {
+			System.out.println(e);
+		}
 	}
 
 	private EditList diff(RawText a, RawText b) {
