@@ -922,11 +922,15 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	protected void writeLine(final char prefix, final RawText text,
 			final int cur) throws IOException {
+		// 色変えたい(これじゃ無理)
+		//System.out.print("\u001b[31m"); //$NON-NLS-1$
 		out.write(prefix);
 
 		// 出力させている命令？
 		text.writeLine(out, cur);
 		out.write('\n');
+		//System.out.print("\u001b[00m"); //$NON-NLS-1$
+
 	}
 
 	/**
@@ -998,9 +1002,6 @@ public class DiffFormatter implements AutoCloseable {
 				type = PatchType.BINARY;
 
 			} else {
-				res.a = new RawText(aRaw);
-				res.b = new RawText(bRaw);
-
 				/*
 				 * System.out.println("aRaw is "); //$NON-NLS-1$
 				 * out.write(aRaw); System.out.println("bRaw is ");
@@ -1009,9 +1010,17 @@ public class DiffFormatter implements AutoCloseable {
 
 				// RawTextを外部に書き出す
 				String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
+				aRawS = "古いのを書き換え"; //$NON-NLS-1$
+				aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
 				export("aRaw1", aRawS); //$NON-NLS-1$
+
 				String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
+				//bRawS += "//テキスト"; //$NON-NLS-1$
+				//bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 				export("bRaw1", bRawS); //$NON-NLS-1$
+
+				res.a = new RawText(aRaw);
+				res.b = new RawText(bRaw);
 
 				editList = diff(res.a, res.b);
 				type = PatchType.UNIFIED;
