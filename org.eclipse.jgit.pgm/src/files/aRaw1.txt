@@ -1,1 +1,18 @@
-古いのを書き換え
+package astnode;
+
+public class test {
+	public static void main(String[] args) {
+		
+		//test
+		int j;
+		/*
+		 *テスト 
+		 *します
+		 */
+		
+		String text;
+		
+		String ast = "@SuppressWarnings(\"unused\")" + "aiu" ;
+    	ast = ast.replaceFirst("@SuppressWarnings(\"unused\")", "");
+	}
+}

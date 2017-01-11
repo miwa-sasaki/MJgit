@@ -9,6 +9,8 @@ public class test {
 		 *テスト 
 		 *します
 		 */
+		//変更
+		
 		
 		String text;
 		

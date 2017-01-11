@@ -151,6 +151,10 @@ public class DiffFormatter implements AutoCloseable {
 
 	private ContentSource.Pair source;
 
+	// コンテキストの種類を覚えておくフラグ．
+	// 0:本質,1:コメント
+	private int CxFlg;
+
 	/**
 	 * Create a new formatter with a default level of context.
 	 *
@@ -320,6 +324,26 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	public void setNewPrefix(String prefix) {
 		newPrefix = prefix;
+	}
+
+	/**
+	 * 指定されたコンテキストに対応するフラグを立てる
+	 *
+	 * @param type
+	 *            コンテキストの種類． コマンドか本質を受付
+	 */
+	public void setContextFlg(String type) {
+		if (type.equals("ast")) { //$NON-NLS-1$
+			CxFlg = 0;//本質
+			System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
+		} else if (type.equals("comment")) { //$NON-NLS-1$
+			CxFlg = 1;//コメント
+			System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
+		}else{
+			// CxFlg = -1;
+			System.out.println("コンテキストの種類には\"ast\"か\"comment\"を指定してください"); //$NON-NLS-1$
+			System.exit(-1);
+		}
 	}
 
 	/**
@@ -1010,8 +1034,8 @@ public class DiffFormatter implements AutoCloseable {
 
 				// RawTextを外部に書き出す
 				String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
-				aRawS = "古いのを書き換え"; //$NON-NLS-1$
-				aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+				//aRawS = "古いのを書き換え"; //$NON-NLS-1$
+				//aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
 				export("aRaw1", aRawS); //$NON-NLS-1$
 
 				String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
@@ -1078,10 +1102,10 @@ public class DiffFormatter implements AutoCloseable {
 			if (checkBeforeWritefile(file)) {
 				FileWriter filewriter = new FileWriter(file);
 				filewriter.write(body);
-				System.out.println(filename + "に書き込み完了"); //$NON-NLS-1$
+				//System.out.println(filename + "に書き込み完了"); //$NON-NLS-1$
 				filewriter.close();
 			} else {
-				System.out.println(filename + "に書き込めません"); //$NON-NLS-1$
+				//System.out.println(filename + "に書き込めません"); //$NON-NLS-1$
 			}
 		} catch (IOException e) {
 			System.out.println(e);

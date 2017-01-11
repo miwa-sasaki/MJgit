@@ -168,6 +168,13 @@ class Diff extends TextBuiltin {
 
 	// END -- Options shared with Log
 
+	// 改変オプション
+	@Option(name = "-cx", aliases = "--context", metaVar = "種類", usage = "種類に応じたコンテキストを表示")
+	void Context(String type) {
+		diffFmt.setContextFlg(type);
+	}
+
+
 	@Override
 	protected void init(final Repository repository, final String gitDir) {
 		super.init(repository, gitDir);
