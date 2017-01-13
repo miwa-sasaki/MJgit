@@ -6,6 +6,7 @@
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/transport/FetchConnection.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/util/time/MonotonicSystemClock.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/api/CloneCommand.java
+/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/diff/AstVisitor.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/diff/EditList.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/api/errors/NoHeadException.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/internal/storage/file/ReflogEntryImpl.java
@@ -481,6 +482,7 @@
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/internal/storage/file/PackIndex.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/transport/PreReceiveHookChain.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/merge/MergeAlgorithm.java
+/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/diff/CommentVisitor.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/internal/storage/pack/ObjectReuseAsIs.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/lib/MutableObjectId.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/transport/FetchResult.java

@@ -168,8 +168,8 @@ class Diff extends TextBuiltin {
 
 	// END -- Options shared with Log
 
-	// 改変オプション
-	@Option(name = "-cx", aliases = "--context", metaVar = "種類", usage = "種類に応じたコンテキストを表示")
+	// 改変オプションcontext
+	@Option(name = "-cx", aliases = "--context", metaVar = "コンテキスト", usage = "指定されたコンテキストを表示")
 	void Context(String type) {
 		diffFmt.setContextFlg(type);
 	}

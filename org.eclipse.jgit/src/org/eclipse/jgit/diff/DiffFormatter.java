@@ -44,6 +44,11 @@
 
 package org.eclipse.jgit.diff;
 
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD;
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY;
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE;
@@ -55,13 +60,13 @@ import static org.eclipse.jgit.lib.Constants.encode;
 import static org.eclipse.jgit.lib.Constants.encodeASCII;
 import static org.eclipse.jgit.lib.FileMode.GITLINK;
 
-//import java.io.BufferedReader;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-//import java.io.FileInputStream;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-//import java.io.InputStreamReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
@@ -106,6 +111,9 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.QuotedString;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
+
+//import astnode.AstVisitor;
+//import astnode.CommentVisitor;
 
 /**
  * Format a Git style patch script.
@@ -153,7 +161,7 @@ public class DiffFormatter implements AutoCloseable {
 
 	// コンテキストの種類を覚えておくフラグ．
 	// 0:本質,1:コメント
-	private int CxFlg;
+	private int CxFlg = -1;
 
 	/**
 	 * Create a new formatter with a default level of context.
@@ -340,7 +348,7 @@ public class DiffFormatter implements AutoCloseable {
 			CxFlg = 1;//コメント
 			System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
 		}else{
-			// CxFlg = -1;
+			CxFlg = -1;
 			System.out.println("コンテキストの種類には\"ast\"か\"comment\"を指定してください"); //$NON-NLS-1$
 			System.exit(-1);
 		}
@@ -1032,17 +1040,52 @@ public class DiffFormatter implements AutoCloseable {
 				 * //$NON-NLS-1$ out.write(bRaw);
 				 */
 
-				// RawTextを外部に書き出す
-				String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
-				//aRawS = "古いのを書き換え"; //$NON-NLS-1$
-				//aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
-				export("aRaw1", aRawS); //$NON-NLS-1$
+				//cxオプションの有無
+				if(CxFlg != -1){
 
-				String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
-				//bRawS += "//テキスト"; //$NON-NLS-1$
-				//bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
-				export("bRaw1", bRawS); //$NON-NLS-1$
+					System.out.println("cx　オプション！！"); //$NON-NLS-1$
 
+					// RawTextを外部に書き出す
+					String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
+					//aRawS = "古いのを書き換え"; //$NON-NLS-1$
+					//aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+					export("aRaw", aRawS); //$NON-NLS-1$
+
+					String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
+					export("bRaw", bRawS); //$NON-NLS-1$
+
+					//aRaw_astとaRaw_commentを作成
+					astnode("aRaw"); //$NON-NLS-1$
+					//bRaw_astとbRaw_commentを作成
+					astnode("bRaw"); //$NON-NLS-1$
+
+
+					//何を出力？
+					if(CxFlg == 0){
+						//astを指定
+						System.out.println("astを指定"); //$NON-NLS-1$
+						//aRawをaRaw_astに書き換え
+						aRawS = fileToString(new File("/org.eclipse.jgit.pgm/src/files/aRaw_ast.java")); //$NON-NLS-1$
+						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+						//bRawをbRaw_astに書き換え
+						bRawS = fileToString(new File("/org.eclipse.jgit.pgm/src/files/bRaw_ast.java")); //$NON-NLS-1$
+						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+
+					} else if (CxFlg == 1) {
+						//commentを指定
+
+						//aRawをaRaw_commentに書き換え
+						aRawS = fileToString(new File("/org.eclipse.jgit.pgm/src/files/aRaw_comment.java")); //$NON-NLS-1$
+						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+						//bRawをbRaw_commentに書き換え
+						bRawS = fileToString(new File(
+								"/org.eclipse.jgit.pgm/src/files/bRaw_comment.java")); //$NON-NLS-1$\
+						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+
+					}
+				}
+
+				// ////ここから元ソース////////
 				res.a = new RawText(aRaw);
 				res.b = new RawText(bRaw);
 
@@ -1067,6 +1110,30 @@ public class DiffFormatter implements AutoCloseable {
 		return res;
 	}
 
+	private static void astnode(String filename) throws IOException {
+		// テキストを読み込む
+		String source = fileToString(new File(
+				"/org.eclipse.jgit.pgm/src/files/" + filename + ".java")); //$NON-NLS-1$ //$NON-NLS-2$
+
+		// Create AST Parser
+		ASTParser parser = ASTParser.newParser(AST.JLS8);
+		parser.setSource(source.toCharArray()); // sourceはソースコードをString型の文字列に変換したもの
+		CompilationUnit unit = (CompilationUnit) parser
+				.createAST(new NullProgressMonitor());
+
+		// 本質解析
+		AstVisitor astVisitor = new AstVisitor(unit, source.split("\n")); //$NON-NLS-1$
+		unit.accept(astVisitor);
+		// 外部ファイルに出力
+		export(filename + "_ast", AstVisitor.ast); //$NON-NLS-1$
+
+		// コメントを解析
+		// なんか知らんけど，本質解析，javadoc解析，アノ解析でコメントも解析されるから，出力だけする．
+		// 外部ファイルに出力
+		export(filename + "_comment", CommentVisitor.comment); //$NON-NLS-1$
+	}
+
+
 	// 外部ファイルのチェック
 	private static boolean checkBeforeWritefile(File file) {
 		if (file.exists()) {
@@ -1077,6 +1144,37 @@ public class DiffFormatter implements AutoCloseable {
 		return false;
 	}
 
+
+	// ファイル内容をを文字列化するメソッド
+	// http://www7a.biglobe.ne.jp/~java-master/samples/file/FileToString.html
+	/**
+	 * @param file
+	 * @return void
+	 * @throws IOException
+	 */
+	@SuppressWarnings("resource")
+	public static String fileToString(File file) throws IOException {
+		BufferedReader br = null;
+		try {
+			// ファイルを読み込むバッファドリーダを作成します。
+			br = new BufferedReader(new InputStreamReader(new FileInputStream(
+					file)));
+			// 読み込んだ文字列を保持するストリングバッファを用意します。
+			StringBuffer sb = new StringBuffer();
+			// ファイルから読み込んだ一文字を保存する変数です。
+			int c;
+			// ファイルから１文字ずつ読み込み、バッファへ追加します。
+			while ((c = br.read()) != -1) {
+				sb.append((char) c);
+			}
+			// バッファの内容を文字列化して返します。
+			return sb.toString();
+		} finally {
+			// リーダを閉じます。
+			// br.close();
+		}
+	}
+
 	/**
 	 * @param filename
 	 * @param body
@@ -1084,7 +1182,8 @@ public class DiffFormatter implements AutoCloseable {
 	// 解析結果を外部ファイルに出力するメソッド
 	public static void export(String filename, String body) {
 		// ファイル名を編集
-		filename = "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/" + filename + ".txt"; //$NON-NLS-1$ //$NON-NLS-2$
+		//filename = "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/" + filename + ".txt"; //$NON-NLS-1$ //$NON-NLS-2$
+		filename = "/org.eclipse.jgit.pgm/src/files/" + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
 		// ファイル作成
 		File newfile = new File(filename);
 		try {
