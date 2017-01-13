@@ -125,11 +125,18 @@ public class NLS {
 		this.locale = locale;
 	}
 
+	/**
+	 * @return as
+	 */
+	public Locale getLocale() {
+		return locale;
+	}
 	@SuppressWarnings("unchecked")
 	private <T extends TranslationBundle> T get(Class<T> type) {
 		TranslationBundle bundle = map.get(type);
 		if (bundle == null) {
-			bundle = GlobalBundleCache.lookupBundle(locale, type);
+			// bundle = GlobalBundleCache.lookupBundle(locale, type);
+			bundle = GlobalBundleCache.lookupBundle(Locale.ROOT, type);
 			// There is a small opportunity for a race, which we may
 			// lose. Accept defeat and return the winner's instance.
 			TranslationBundle old = map.putIfAbsent(type, bundle);

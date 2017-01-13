@@ -94,6 +94,128 @@
       <artifactId>javax.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
+    <!-- 
+    <dependency>
+    <groupId>jackson-annotations-2.8.0.jar</groupId>
+    <artifactId>jackson-annotations-2.8.0.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/jackson-annotations-2.8.0.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>jackson-core-2.8.1.jar</groupId>
+    <artifactId>jackson-core-2.8.1.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/jackson-core-2.8.1.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>jackson-databind-2.8.5.jar</groupId>
+    <artifactId>jackson-databind-2.8.5.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/jackson-databind-2.8.5.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>java-json.jar</groupId>
+    <artifactId>java-json.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/java-json.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.core.contenttype_3.5.0.v20150421-2214.jar</groupId>
+    <artifactId>org.eclipse.core.contenttype_3.5.0.v20150421-2214.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.core.contenttype_3.5.0.v20150421-2214.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.core.jobs_3.7.0.v20150330-2103.jar</groupId>
+    <artifactId>org.eclipse.core.jobs_3.7.0.v20150330-2103.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.core.jobs_3.7.0.v20150330-2103.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.core.resources_3.10.1.v20150725-1910.jar</groupId>
+    <artifactId>org.eclipse.core.resources_3.10.1.v20150725-1910.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.core.resources_3.10.1.v20150725-1910.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.core.runtime_3.11.1.v20150903-1804.jar</groupId>
+    <artifactId>org.eclipse.core.runtime_3.11.1.v20150903-1804.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.core.runtime_3.11.1.v20150903-1804.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.equinox.common_3.7.0.v20150402-1709.jar</groupId>
+    <artifactId>org.eclipse.equinox.common_3.7.0.v20150402-1709.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.equinox.common_3.7.0.v20150402-1709.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.equinox.preferences_3.5.300.v20150408-1437.jar</groupId>
+    <artifactId>org.eclipse.equinox.preferences_3.5.300.v20150408-1437.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.equinox.preferences_3.5.300.v20150408-1437.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.equinox.preferences_3.5.300.v20150408-1437.jar</groupId>
+    <artifactId>org.eclipse.equinox.preferences_3.5.300.v20150408-1437.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.equinox.preferences_3.5.300.v20150408-1437.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.jdt.core_3.11.2.v20160128-0629.jar</groupId>
+    <artifactId>org.eclipse.jdt.core_3.11.2.v20160128-0629.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.jdt.core_3.11.2.v20160128-0629.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.osgi_3.10.102.v20160118-1700.jar</groupId>
+    <artifactId>org.eclipse.osgi_3.10.102.v20160118-1700.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.osgi_3.10.102.v20160118-1700.jar</systemPath>
+</dependency>
+<dependency>
+    <groupId>org.eclipse.jface.text_3.9.1.v20140827-1810.jar</groupId>
+    <artifactId>org.eclipse.jface.text_3.9.1.v20140827-1810.jar</artifactId>
+    <version>1.0</version>
+    <scope>system</scope>
+    <systemPath>/Users/miwaaa8/Documents/研究/workspace/jgit/lib/org.eclipse.jface.text_3.9.1.v20140827-1810.jar</systemPath>
+</dependency>
+	-->
+	
+	<dependency>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>org.eclipse.jdt.core</artifactId>
+        <version>3.12.0.v20160516-2131</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.eclipse.core</groupId>
+        <artifactId>runtime</artifactId>
+        <version>LATEST</version>
+    </dependency>
+
+    
+<!-- https://mvnrepository.com/artifact/org.eclipse.jdt/org.eclipse.jdt.core -->
+<dependency>
+    <groupId>org.eclipse.jdt</groupId>
+    <artifactId>org.eclipse.jdt.core</artifactId>
+    <version>3.10.0</version>
+</dependency>
+    
+    
   </dependencies>
 
   <build>

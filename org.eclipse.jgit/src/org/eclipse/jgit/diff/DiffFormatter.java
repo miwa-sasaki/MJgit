@@ -1054,6 +1054,7 @@ public class DiffFormatter implements AutoCloseable {
 					String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
 					export("bRaw", bRawS); //$NON-NLS-1$
 
+					/*
 					//aRaw_astとaRaw_commentを作成
 					astnode("aRaw"); //$NON-NLS-1$
 					//bRaw_astとbRaw_commentを作成
@@ -1084,6 +1085,7 @@ public class DiffFormatter implements AutoCloseable {
 
 					}
 				}
+				*/
 
 				// ////ここから元ソース////////
 				res.a = new RawText(aRaw);
