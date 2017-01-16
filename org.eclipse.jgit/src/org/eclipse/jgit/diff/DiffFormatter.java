@@ -44,6 +44,7 @@
 
 package org.eclipse.jgit.diff;
 
+
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -68,9 +69,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -343,10 +348,10 @@ public class DiffFormatter implements AutoCloseable {
 	public void setContextFlg(String type) {
 		if (type.equals("ast")) { //$NON-NLS-1$
 			CxFlg = 0;//本質
-			System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
+			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
 		} else if (type.equals("comment")) { //$NON-NLS-1$
 			CxFlg = 1;//コメント
-			System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
+			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
 		}else{
 			CxFlg = -1;
 			System.out.println("コンテキストの種類には\"ast\"か\"comment\"を指定してください"); //$NON-NLS-1$
@@ -569,7 +574,7 @@ public class DiffFormatter implements AutoCloseable {
 		} else if (renameDetector != null)
 			files = detectRenames(files);
 
-		System.out.println("files is" + files); //$NON-NLS-1$
+		//System.out.println("files is" + files); //$NON-NLS-1$
 		// filesは変化があったファイル達
 		return files;
 	}
@@ -816,18 +821,19 @@ public class DiffFormatter implements AutoCloseable {
 			while (aCur < aEnd || bCur < bEnd) {
 				if (aCur < curEdit.getBeginA() || endIdx + 1 < curIdx) {
 					writeContextLine(a, aCur);
-					if (isEndOfLineMissing(a, aCur))
+					// cxオプションの時にnoNewLineが出力されないようにする
+					if (isEndOfLineMissing(a, aCur) && CxFlg == -1)
 						out.write(noNewLine);
 					aCur++;
 					bCur++;
 				} else if (aCur < curEdit.getEndA()) {
 					writeRemovedLine(a, aCur);
-					if (isEndOfLineMissing(a, aCur))
+					if (isEndOfLineMissing(a, aCur) && CxFlg == -1)
 						out.write(noNewLine);
 					aCur++;
 				} else if (bCur < curEdit.getEndB()) {
 					writeAddedLine(b, bCur);
-					if (isEndOfLineMissing(b, bCur))
+					if (isEndOfLineMissing(b, bCur) && CxFlg == -1)
 						out.write(noNewLine);
 					bCur++;
 				}
@@ -1034,60 +1040,71 @@ public class DiffFormatter implements AutoCloseable {
 				type = PatchType.BINARY;
 
 			} else {
-				/*
-				 * System.out.println("aRaw is "); //$NON-NLS-1$
-				 * out.write(aRaw); System.out.println("bRaw is ");
-				 * //$NON-NLS-1$ out.write(bRaw);
-				 */
+
+				// ////ここから改変//////
+
+				String filePlace = "/Users/miwaaa8/Documents/研究/workspace/files/"; //$NON-NLS-1$
 
 				//cxオプションの有無
 				if(CxFlg != -1){
 
-					System.out.println("cx　オプション！！"); //$NON-NLS-1$
+					//System.out.println("cx　オプション！！"); //$NON-NLS-1$
 
 					// RawTextを外部に書き出す
-					String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
+					//String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
+					String aRawS = new String(aRaw);
 					//aRawS = "古いのを書き換え"; //$NON-NLS-1$
 					//aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
-					export("aRaw", aRawS); //$NON-NLS-1$
+					export(filePlace + "aRaw.java", aRawS); //$NON-NLS-1$
 
-					String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
-					export("bRaw", bRawS); //$NON-NLS-1$
+					//String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
+					String bRawS = new String(bRaw);
+					export(filePlace + "bRaw.java", bRawS); //$NON-NLS-1$
 
-					/*
-					//aRaw_astとaRaw_commentを作成
-					astnode("aRaw"); //$NON-NLS-1$
+					// aRaw_astとaRaw_commentファイルを作成
+					astnode(filePlace, "aRaw"); //$NON-NLS-1$
 					//bRaw_astとbRaw_commentを作成
-					astnode("bRaw"); //$NON-NLS-1$
+					astnode(filePlace, "bRaw"); //$NON-NLS-1$
+
+
 
 
 					//何を出力？
+
 					if(CxFlg == 0){
 						//astを指定
-						System.out.println("astを指定"); //$NON-NLS-1$
+						//System.out.println("astを指定"); //$NON-NLS-1$
+
 						//aRawをaRaw_astに書き換え
-						aRawS = fileToString(new File("/org.eclipse.jgit.pgm/src/files/aRaw_ast.java")); //$NON-NLS-1$
+						aRawS = readAll(filePlace + "aRaw_ast.java"); //$NON-NLS-1$
 						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+
 						//bRawをbRaw_astに書き換え
-						bRawS = fileToString(new File("/org.eclipse.jgit.pgm/src/files/bRaw_ast.java")); //$NON-NLS-1$
+						bRawS = readAll(filePlace + "bRaw_ast.java"); //$NON-NLS-1$
 						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
 					} else if (CxFlg == 1) {
 						//commentを指定
+						//System.out.println("commentを指定"); //$NON-NLS-1$
 
-						//aRawをaRaw_commentに書き換え
-						aRawS = fileToString(new File("/org.eclipse.jgit.pgm/src/files/aRaw_comment.java")); //$NON-NLS-1$
+						// aRawをaRaw_astに書き換え
+						aRawS = readAll(filePlace + "aRaw_comment.java"); //$NON-NLS-1$
 						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
-						//bRawをbRaw_commentに書き換え
-						bRawS = fileToString(new File(
-								"/org.eclipse.jgit.pgm/src/files/bRaw_comment.java")); //$NON-NLS-1$\
-						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
+						// bRawをbRaw_astに書き換え
+						bRawS = readAll(filePlace + "bRaw_comment.java"); //$NON-NLS-1$
+						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 					}
 				}
-				*/
+				/*
+				System.out.println(aRaw);
+				System.out.println(new String(aRaw));
+				System.out.println(aRaw);
+				System.out.println(new String(bRaw));
+				 */
 
 				// ////ここから元ソース////////
+
 				res.a = new RawText(aRaw);
 				res.b = new RawText(bRaw);
 
@@ -1112,10 +1129,11 @@ public class DiffFormatter implements AutoCloseable {
 		return res;
 	}
 
-	private static void astnode(String filename) throws IOException {
+
+	private static void astnode(String filePlace, String filename)
+			throws IOException {
 		// テキストを読み込む
-		String source = fileToString(new File(
-				"/org.eclipse.jgit.pgm/src/files/" + filename + ".java")); //$NON-NLS-1$ //$NON-NLS-2$
+		String source = readAll(filePlace + filename + ".java"); //$NON-NLS-1$
 
 		// Create AST Parser
 		ASTParser parser = ASTParser.newParser(AST.JLS8);
@@ -1127,12 +1145,21 @@ public class DiffFormatter implements AutoCloseable {
 		AstVisitor astVisitor = new AstVisitor(unit, source.split("\n")); //$NON-NLS-1$
 		unit.accept(astVisitor);
 		// 外部ファイルに出力
-		export(filename + "_ast", AstVisitor.ast); //$NON-NLS-1$
+		export(filePlace + filename + "_ast.java", AstVisitor.ast); //$NON-NLS-1$
 
 		// コメントを解析
 		// なんか知らんけど，本質解析，javadoc解析，アノ解析でコメントも解析されるから，出力だけする．
 		// 外部ファイルに出力
-		export(filename + "_comment", CommentVisitor.comment); //$NON-NLS-1$
+		export(filePlace + filename + "_comment.java", CommentVisitor.comment); //$NON-NLS-1$
+
+		// 出力後に変数初期化
+		// System.out.println(AstVisitor.ast);
+		AstVisitor.ast = ""; //$NON-NLS-1$
+		//System.out.println("消したあと" + AstVisitor.ast); //$NON-NLS-1$
+		// System.out.println(CommentVisitor.comment);
+		CommentVisitor.comment = ""; //$NON-NLS-1$
+		//System.out.println("消したあと" + CommentVisitor.comment); //$NON-NLS-1$
+
 	}
 
 
@@ -1146,35 +1173,16 @@ public class DiffFormatter implements AutoCloseable {
 		return false;
 	}
 
-
-	// ファイル内容をを文字列化するメソッド
-	// http://www7a.biglobe.ne.jp/~java-master/samples/file/FileToString.html
 	/**
-	 * @param file
-	 * @return void
+	 * @param path
+	 * @return　ファイルの中身のString
 	 * @throws IOException
 	 */
-	@SuppressWarnings("resource")
-	public static String fileToString(File file) throws IOException {
-		BufferedReader br = null;
-		try {
-			// ファイルを読み込むバッファドリーダを作成します。
-			br = new BufferedReader(new InputStreamReader(new FileInputStream(
-					file)));
-			// 読み込んだ文字列を保持するストリングバッファを用意します。
-			StringBuffer sb = new StringBuffer();
-			// ファイルから読み込んだ一文字を保存する変数です。
-			int c;
-			// ファイルから１文字ずつ読み込み、バッファへ追加します。
-			while ((c = br.read()) != -1) {
-				sb.append((char) c);
-			}
-			// バッファの内容を文字列化して返します。
-			return sb.toString();
-		} finally {
-			// リーダを閉じます。
-			// br.close();
-		}
+	// http://qiita.com/penguinshunya/items/353bb1c555f337b0cf6d
+	public static String readAll(final String path) throws IOException {
+		return Files.lines(Paths.get(path), Charset.forName("UTF-8")) //$NON-NLS-1$
+				.collect(
+						Collectors.joining(System.getProperty("line.separator"))); //$NON-NLS-1$
 	}
 
 	/**
@@ -1184,8 +1192,9 @@ public class DiffFormatter implements AutoCloseable {
 	// 解析結果を外部ファイルに出力するメソッド
 	public static void export(String filename, String body) {
 		// ファイル名を編集
-		//filename = "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/" + filename + ".txt"; //$NON-NLS-1$ //$NON-NLS-2$
-		filename = "/org.eclipse.jgit.pgm/src/files/" + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
+		//filename = "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/" + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
+		//filename = "/org.eclipse.jgit.pgm/src/files/" + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
+
 		// ファイル作成
 		File newfile = new File(filename);
 		try {
