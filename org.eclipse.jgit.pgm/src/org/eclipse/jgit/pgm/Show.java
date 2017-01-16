@@ -161,6 +161,13 @@ class Show extends TextBuiltin {
 
 	// END -- Options shared with Diff
 
+	// 改変オプションcontext
+	@Option(name = "-cx", aliases = "--context", metaVar = "コンテキスト", usage = "指定されたコンテキストを表示")
+	void Context(String type) {
+		diffFmt.setContextFlg(type);
+	}
+
+
 	Show() {
 		fmt = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy ZZZZZ", Locale.US); //$NON-NLS-1$
 	}
