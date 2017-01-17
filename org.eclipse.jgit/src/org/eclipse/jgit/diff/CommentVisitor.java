@@ -79,6 +79,7 @@ public class CommentVisitor extends ASTVisitor {
 	//javadocも
     @Override
     public boolean visit(Javadoc node) {
+		// @の直前の改行しか反映してくれない
     	comment += node + "\n";
     	return true;
     }

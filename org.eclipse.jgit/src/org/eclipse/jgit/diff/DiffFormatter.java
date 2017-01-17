@@ -168,6 +168,10 @@ public class DiffFormatter implements AutoCloseable {
 	// 0:本質,1:コメント
 	private int CxFlg = -1;
 
+	// ファイルの種類をjavaかどうか判断するフラグ
+	// 0:違う, 1:javaファイル
+	private int isJavaFile = 0;
+
 	/**
 	 * Create a new formatter with a default level of context.
 	 *
@@ -353,9 +357,15 @@ public class DiffFormatter implements AutoCloseable {
 			CxFlg = 1;//コメント
 			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
 		}else{
-			CxFlg = -1;
-			System.out.println("コンテキストの種類には\"ast\"か\"comment\"を指定してください"); //$NON-NLS-1$
-			System.exit(-1);
+			// コンテキスト未設定時に.javaだけを対象としてdiffを行う場合
+			CxFlg = 2;
+
+			// コンテキスト未設定時にエラーにする場合
+			/*
+			 CxFlg = -1;
+			 System.out.println("コンテキストの種類には\"ast\"か\"comment\"を指定してください");//$NON-NLS-1$
+			 System.exit(-1);
+			 */
 		}
 	}
 
@@ -710,9 +720,24 @@ public class DiffFormatter implements AutoCloseable {
 	 *             be written to.
 	 */
 	public void format(List<? extends DiffEntry> entries) throws IOException {
-		for (DiffEntry ent : entries)
+		for (DiffEntry ent : entries) {
 			// 変更があったファイル一つ一つについてformat()していく
+			// ので，ここでファイルをふるいにかけられる
+
+			// System.out.println(ent.oldPath);
+
+			// ここでfilesがjavaかどうかを一つ一つ確認する
+			if (CxFlg != -1 && ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
+				//System.out.println("Yes java"); //$NON-NLS-1$
+				isJavaFile = 1;
+				// format(ent);
+			} else {
+				//System.out.println("Not java"); //$NON-NLS-1$
+				isJavaFile = 0;
+			}
 			format(ent);
+		}
+
 	}
 
 	/**
@@ -1046,7 +1071,9 @@ public class DiffFormatter implements AutoCloseable {
 				String filePlace = "/Users/miwaaa8/Documents/研究/workspace/files/"; //$NON-NLS-1$
 
 				//cxオプションの有無
-				if(CxFlg != -1){
+				// -1はオプションなし．普通にdiff実行
+				// 2は-cxあるけどその先の指定なし．.javaにだけ普通にdiffかける
+				if (CxFlg != -1 && CxFlg != 2 && isJavaFile == 1) {
 
 					//System.out.println("cx　オプション！！"); //$NON-NLS-1$
 
@@ -1066,11 +1093,7 @@ public class DiffFormatter implements AutoCloseable {
 					//bRaw_astとbRaw_commentを作成
 					astnode(filePlace, "bRaw"); //$NON-NLS-1$
 
-
-
-
 					//何を出力？
-
 					if(CxFlg == 0){
 						//astを指定
 						//System.out.println("astを指定"); //$NON-NLS-1$
