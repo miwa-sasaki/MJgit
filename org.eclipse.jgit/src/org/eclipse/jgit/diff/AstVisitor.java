@@ -47,7 +47,7 @@ public class AstVisitor extends ASTVisitor {
 		}
 
 		// メソッドの外側のエラーが見つけれる
-		System.out.println("getFlags " + node.getFlags()); //$NON-NLS-1$
+		//System.out.println("getFlags " + node.getFlags()); //$NON-NLS-1$
 
 		// 構文エラーがあった場合
 		if ((node.getFlags() & ASTNode.MALFORMED) == ASTNode.MALFORMED) {
