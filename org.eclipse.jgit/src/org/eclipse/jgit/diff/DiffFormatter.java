@@ -173,6 +173,20 @@ public class DiffFormatter implements AutoCloseable {
 	private int isJavaFile = 0;
 
 	/**
+	 * 変更された.javaファイルの数
+	 */
+	public int numJavaFile = 0;
+
+	/**
+	 * 変更された.java以外のファイル
+	 */
+	public int numOtherFile = 0;
+
+	boolean aSyntaxFlg = true;
+
+	boolean bSyntaxFlg = true;
+
+	/**
 	 * Create a new formatter with a default level of context.
 	 *
 	 * @param out
@@ -727,16 +741,23 @@ public class DiffFormatter implements AutoCloseable {
 			// System.out.println(ent.oldPath);
 
 			// ここでfilesがjavaかどうかを一つ一つ確認する
-			if (CxFlg != -1 && ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
+			//if (CxFlg != -1 && ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
+			if (ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
 				//System.out.println("Yes java"); //$NON-NLS-1$
 				isJavaFile = 1;
-				// format(ent);
+				numJavaFile++;
+				//System.out.println("numJavaFile is" + numJavaFile); //$NON-NLS-1$
 			} else {
 				//System.out.println("Not java"); //$NON-NLS-1$
 				isJavaFile = 0;
+				numOtherFile++;
+				//System.out.println("numOtherFile is" + numOtherFile); //$NON-NLS-1$
 			}
 			format(ent);
 		}
+
+		//System.out.println("final numJavaFile is" + numJavaFile); //$NON-NLS-1$
+		//System.out.println("final numOtherFile is" + numOtherFile); //$NON-NLS-1$
 
 	}
 
@@ -1089,34 +1110,43 @@ public class DiffFormatter implements AutoCloseable {
 					export(filePlace + "bRaw.java", bRawS); //$NON-NLS-1$
 
 					// aRaw_astとaRaw_commentファイルを作成
-					astnode(filePlace, "aRaw"); //$NON-NLS-1$
+					aSyntaxFlg = astnode(filePlace, "aRaw"); //$NON-NLS-1$
 					//bRaw_astとbRaw_commentを作成
-					astnode(filePlace, "bRaw"); //$NON-NLS-1$
+					bSyntaxFlg = astnode(filePlace, "bRaw"); //$NON-NLS-1$
 
-					//何を出力？
-					if(CxFlg == 0){
-						//astを指定
-						//System.out.println("astを指定"); //$NON-NLS-1$
+					//System.out.println("aSyntaxFlg is " + aSyntaxFlg); //$NON-NLS-1$
+					//System.out.println("bSyntaxFlg is " + bSyntaxFlg); //$NON-NLS-1$
 
-						//aRawをaRaw_astに書き換え
-						aRawS = readAll(filePlace + "aRaw_ast.java"); //$NON-NLS-1$
-						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+					// 構文エラーあった？
+					if (aSyntaxFlg && bSyntaxFlg) {
+						//System.out.println("構文エラーなし"); //$NON-NLS-1$
+						// 何を出力？
+						if (CxFlg == 0) {
+							// astを指定
+							//System.out.println("astを指定"); //$NON-NLS-1$
 
-						//bRawをbRaw_astに書き換え
-						bRawS = readAll(filePlace + "bRaw_ast.java"); //$NON-NLS-1$
-						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+							// aRawをaRaw_astに書き換え
+							aRawS = readAll(filePlace + "aRaw_ast.java"); //$NON-NLS-1$
+							aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
-					} else if (CxFlg == 1) {
-						//commentを指定
-						//System.out.println("commentを指定"); //$NON-NLS-1$
+							// bRawをbRaw_astに書き換え
+							bRawS = readAll(filePlace + "bRaw_ast.java"); //$NON-NLS-1$
+							bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
-						// aRawをaRaw_astに書き換え
-						aRawS = readAll(filePlace + "aRaw_comment.java"); //$NON-NLS-1$
-						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+						} else if (CxFlg == 1) {
+							// commentを指定
+							//System.out.println("commentを指定"); //$NON-NLS-1$
 
-						// bRawをbRaw_astに書き換え
-						bRawS = readAll(filePlace + "bRaw_comment.java"); //$NON-NLS-1$
-						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+							// aRawをaRaw_astに書き換え
+							aRawS = readAll(filePlace + "aRaw_comment.java"); //$NON-NLS-1$
+							aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+
+							// bRawをbRaw_astに書き換え
+							bRawS = readAll(filePlace + "bRaw_comment.java"); //$NON-NLS-1$
+							bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+						}
+					} else {
+						//System.out.println("構文エラーあり"); //$NON-NLS-1$
 					}
 				}
 				/*
@@ -1153,8 +1183,9 @@ public class DiffFormatter implements AutoCloseable {
 	}
 
 
-	private static void astnode(String filePlace, String filename)
+	private static boolean astnode(String filePlace, String filename)
 			throws IOException {
+		boolean SyntaxFlg;
 		// テキストを読み込む
 		String source = readAll(filePlace + filename + ".java"); //$NON-NLS-1$
 
@@ -1167,13 +1198,17 @@ public class DiffFormatter implements AutoCloseable {
 		// 本質解析
 		AstVisitor astVisitor = new AstVisitor(unit, source.split("\n")); //$NON-NLS-1$
 		unit.accept(astVisitor);
+		// 構文エラーの有無をチェック
+		SyntaxFlg = AstVisitor.SyntaxFlg;
 		// 外部ファイルに出力
 		export(filePlace + filename + "_ast.java", AstVisitor.ast); //$NON-NLS-1$
+
 
 		// コメントを解析
 		// なんか知らんけど，本質解析，javadoc解析，アノ解析でコメントも解析されるから，出力だけする．
 		// 外部ファイルに出力
 		export(filePlace + filename + "_comment.java", CommentVisitor.comment); //$NON-NLS-1$
+
 
 		// 出力後に変数初期化
 		// System.out.println(AstVisitor.ast);
@@ -1182,6 +1217,8 @@ public class DiffFormatter implements AutoCloseable {
 		// System.out.println(CommentVisitor.comment);
 		CommentVisitor.comment = ""; //$NON-NLS-1$
 		//System.out.println("消したあと" + CommentVisitor.comment); //$NON-NLS-1$
+
+		return SyntaxFlg;
 
 	}
 

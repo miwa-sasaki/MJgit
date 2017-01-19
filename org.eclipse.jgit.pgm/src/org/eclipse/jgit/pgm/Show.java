@@ -230,6 +230,10 @@ class Show extends TextBuiltin {
 				}
 			}
 		} finally {
+			// 最後にファイルの数出力
+			System.out.println("numJavaFile\t" + diffFmt.numJavaFile); //$NON-NLS-1$
+			System.out.println("numOtherFile\t" + diffFmt.numOtherFile); //$NON-NLS-1$
+
 			diffFmt.close();
 		}
 	}
