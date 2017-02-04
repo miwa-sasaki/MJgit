@@ -112,7 +112,7 @@ public class AstVisitor extends ASTVisitor {
 			// System.out.println("見つけた");
 			// 各行に改行を戻す
 			for (int l = 0; l < astSplit.length; l++) {
-				astSplit[l] += "\n";
+				astSplit[l] += "\n"; //$NON-NLS-1$
 			}
 			// javadocの開始行
 			int startIndex = i - j;
@@ -120,17 +120,17 @@ public class AstVisitor extends ASTVisitor {
 			// javadocの部分を消す
 			for (int l = 0; l < endIndex; l++) {
 				// System.out.println("aS[l] is " + astSplit[startIndex + l]);
-				astSplit[startIndex + l] = "";
+				astSplit[startIndex + l] = ""; //$NON-NLS-1$
 				// System.out.println("aS[l] is " + astSplit[startIndex + l]);
 			}
 
 			// astに戻す
-			ast = "";
+			ast = ""; //$NON-NLS-1$
 			for (int l = 0; l < astSplit.length; l++) {
 				ast += astSplit[l];
 			}
 		} else {
-			System.out.println("javadoc見つからん");
+			System.out.println("javadoc見つからん"); //$NON-NLS-1$
 		}
 
 		return true;

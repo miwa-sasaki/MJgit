@@ -224,6 +224,7 @@
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/internal/storage/dfs/DfsBlockCacheConfig.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/internal/storage/file/CachedObjectDirectory.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/fnmatch/Head.java
+/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/diff/Visitor.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/internal/storage/file/PackBitmapIndexV1.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/attributes/FilterCommandRegistry.java
 /Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit/src/org/eclipse/jgit/transport/LongMap.java

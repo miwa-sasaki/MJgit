@@ -6,7 +6,6 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.BlockComment;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.LineComment;
 
 //コメント解析
@@ -18,25 +17,54 @@ public class CommentVisitor extends ASTVisitor {
 
 	CompilationUnit compilationUnit;
 	private String[] source;
-	static String comment = new String("");
+
+	static String comment = new String(""); //$NON-NLS-1$
+
+	static String javadoc = new String(""); //$NON-NLS-1$
+
+	boolean ast;
+
+	boolean com;
+
+	boolean jd;
+
+	boolean anno;
 
 	// コンストラクタ
 	/**
 	 * @param compilationUnit
 	 * @param source
+	 * @param ast
+	 * @param com
+	 * @param jd
+	 * @param anno
 	 */
-	public CommentVisitor(CompilationUnit compilationUnit, String[] source) {
+	public CommentVisitor(CompilationUnit compilationUnit, String[] source,
+			boolean ast, boolean com, boolean jd, boolean anno) {
 		super();
 		this.compilationUnit = compilationUnit;
 		this.source = source;
+
+		this.ast = ast;
+		this.com = com;
+		this.jd = jd;
+		this.anno = anno;
+
+		// System.out.println(ast);
+		// System.out.println(com);
+		// System.out.println(jd);
+		// System.out.println(anno);
+
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean visit(CompilationUnit node) {
-		for (Comment comment : (List<Comment>) node.getCommentList()) {
-			comment.accept(new CommentVisitor(node, source));
+
+		for (Comment comment1 : (List<Comment>) node.getCommentList()) {
+			comment1.accept(new CommentVisitor(node, source, ast, com, jd, anno));
 		}
+
 		return super.visit(node);
 	}
 
@@ -46,7 +74,7 @@ public class CommentVisitor extends ASTVisitor {
 		int startLineNumber = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
 		String lineComment = source[startLineNumber].trim();
 		//comment += startLineNumber + ":" + lineComment + "\n";
-		comment += lineComment + "\n";
+		comment += lineComment + "\n"; //$NON-NLS-1$
 		//System.out.print(comment);
 
 		return super.visit(node);
@@ -65,23 +93,14 @@ public class CommentVisitor extends ASTVisitor {
 			String blockCommentLine = source[lineCount].trim();
 			blockComment.append(blockCommentLine);
 			if (lineCount != endLineNumber) {
-				blockComment.append("\n");
+				blockComment.append("\n"); //$NON-NLS-1$
 			}
 		}
 		//行数含む
 		//comment += startLineNumber + ":" + blockComment + "\n";
-		comment += blockComment + "\n";
+		comment += blockComment + "\n"; //$NON-NLS-1$
 		//System.out.print(comment);
 
 		return super.visit(node);
 	}
-
-	//javadocも
-    @Override
-    public boolean visit(Javadoc node) {
-		// @の直前の改行しか反映してくれない
-    	comment += node + "\n";
-    	return true;
-    }
-
 }
