@@ -43,7 +43,7 @@ public class AstVisitor extends ASTVisitor {
 		//int startLineNumber = compilationUnit.getLineNumber(node.getStartPosition()) -1;
 
 		for (Comment comment : (List<Comment>) node.getCommentList()) {
-			comment.accept(new CommentVisitor(node, source));
+			// comment.accept(new CommentVisitor(node, source));
 		}
 
 		// メソッドの外側のエラーが見つけれる

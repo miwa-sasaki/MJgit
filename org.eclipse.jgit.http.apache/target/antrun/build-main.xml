@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<project name="maven-antrun-" default="main"  >
-<target name="main" if="">
-  <copy file="META-INF/MANIFEST.MF" tofile="/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.http.apache/target/META-INF/MANIFEST.MF" overwrite="true"/>
-  <replace file="/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.http.apache/target/META-INF/MANIFEST.MF">
-    <replacefilter value=".201702040059" token=".qualifier"/>
-  </replace>
-</target>
-</project>

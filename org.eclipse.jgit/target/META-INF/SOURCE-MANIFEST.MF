@@ -1,7 +1,0 @@
-Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Name: org.eclipse.jgit - Sources
-Bundle-SymbolicName: org.eclipse.jgit.source
-Bundle-Vendor: Eclipse.org - JGit
-Bundle-Version: 4.6.0.201702040059
-Eclipse-SourceBundle: org.eclipse.jgit;version="4.6.0.201702040059";roots="."

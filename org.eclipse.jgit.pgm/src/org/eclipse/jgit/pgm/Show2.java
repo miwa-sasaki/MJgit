@@ -77,7 +77,7 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
 @Command(common = true, usage = "usage_show")
-class Show extends TextBuiltin {
+class Show2 extends TextBuiltin {
 	private final TimeZone myTZ = TimeZone.getDefault();
 
 	private final DateFormat fmt;
@@ -163,12 +163,12 @@ class Show extends TextBuiltin {
 
 	// 改変オプションcontext
 	@Option(name = "-cx", aliases = "--context", metaVar = "コンテキスト", usage = "指定されたコンテキストを表示")
-	void Context(String query) {
-		diffFmt.setContextFlg(query);
+	void Context(String type) {
+		diffFmt.setContextFlg(type);
 	}
 
 
-	Show() {
+	Show2() {
 		fmt = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy ZZZZZ", Locale.US); //$NON-NLS-1$
 	}
 

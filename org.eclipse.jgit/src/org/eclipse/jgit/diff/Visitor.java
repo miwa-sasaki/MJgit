@@ -1,16 +1,27 @@
 package org.eclipse.jgit.diff;
 
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IExtendedModifier;
 import org.eclipse.jdt.core.dom.Javadoc;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NormalAnnotation;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Statement;
+
+import astnode.query.Context;
+import astnode.query.MJQuery;
+import astnode.query.Method;
+import astnode.query.Variable;
 
 //本質解析
 /**
@@ -22,275 +33,310 @@ public class Visitor extends ASTVisitor {
 	CompilationUnit compilationUnit;
 	private String[] source;
 
-	static String exp = new String(""); //$NON-NLS-1$
-	//構文エラーの有無
-	static boolean SyntaxFlg = true;
+	// 構文エラーの有無
+	boolean SyntaxFlg = true;
 
 	boolean ast;
 	boolean com;
 	boolean jd;
 	boolean anno;
 
+	private MJQuery query;
+
+	/**
+	 *
+	 */
+	public Set<Integer> lineNumbers;
+
 	// コンストラクタ
 	/**
 	 * @param compilationUnit
 	 * @param source
-	 * @param ast
-	 * @param com
-	 * @param jd
-	 * @param anno
+	 * @param query
+	 * @param lineNumbers
+	 * @param queryNum
 	 */
 	public Visitor(CompilationUnit compilationUnit, String[] source,
-			boolean ast, boolean com, boolean jd, boolean anno) {
+			MJQuery query, Set<Integer> lineNumbers, int queryNum) {
 		super();
 		this.compilationUnit = compilationUnit;
 		this.source = source;
-		this.ast = ast;
-		this.com = com;
-		this.jd = jd;
-		this.anno = anno;
+		ast = com = jd = anno = false;
+		if (query.contexts.get(queryNum) == Context.STATEMENT)
+			this.ast = true;
+		if (query.contexts.get(queryNum) == Context.COMMENT)
+			this.com = true;
+		if (query.contexts.get(queryNum) == Context.JAVADOC)
+			this.jd = true;
+		if (query.contexts.get(queryNum) == Context.ANNOTATION)
+			this.anno = true;
+		/*
+		 * System.out.println("ast: "+ast); System.out.println("com: "+com);
+		 * System.out.println("jd: "+jd); System.out.println("anno: "+anno);
+		 */
 
-		//System.out.println(ast);
-		//System.out.println(com);
-		//System.out.println(jd);
-		//System.out.println(anno);
+		this.query = query;
+		// this.lineNumbers = new TreeSet<>();
+		this.lineNumbers = lineNumbers;
+		// ぬるぽ
+		if (lineNumbers == null) {
+			this.lineNumbers = new TreeSet<>();
+		}
+
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean visit(CompilationUnit node) {
-		for (Comment comment : (List<Comment>) node.getCommentList()) {
-			comment.accept(new CommentVisitor(node, source, ast, com, jd, anno));
-		}
-		// メソッドの外側のエラーが見つけれる
-		// System.out.println("getFlags " + node.getFlags());
-		// 構文エラーがあった場合
-		if ((node.getFlags() & ASTNode.MALFORMED) == ASTNode.MALFORMED) {
-			System.out.println("構文エラーがあるのでコンテキストを絞り込めません "); //$NON-NLS-1$
-			SyntaxFlg = false;
-		}
-		if(ast){
-			//コメント以外全部書き出す
-			exp += node + "\n"; //$NON-NLS-1$
-			//System.out.print(ast);
+		if (ast) {
+			// 構文エラーがあった場合
+			if ((node.getFlags()
+					& ASTNode.MALFORMED) == ASTNode.MALFORMED) {
+				// System.out.println("構文エラー！ "+ (node.getFlags() &
+				// CompilationUnit.MALFORMED));
+				SyntaxFlg = false;
+			}
+			if (!hasSpecificQuery()) {
+				// 詳細なクエリが無い場合
+				// 全部書き出す(jd, anno, comの除去はそれぞれのvisitorがフラグをみてやってくれる)
+				System.out.println("STATEMENT全部指定");
+				addLineNumberAll(source);
+			}
 		}
 		return super.visit(node);
 	}
 
-	//メソッドの中のエラーが見つけれる
-	public boolean visit(MethodDeclaration node){
-		//System.out.println("MethodDeclaration\n" + node);
-		//System.out.println("in Method getFlags " + node.getFlags());
-		//構文エラーがあった場合
-		if ((node.getFlags() & ASTNode.MALFORMED) == ASTNode.MALFORMED) {
-			System.out.println("構文エラーがあるのでコンテキストを絞り込めません "); //$NON-NLS-1$
+	// 元ファイルの全行番号を書き出す
+	private void addLineNumberAll(String[] source) {
+		int start = 0;
+		int end = source.length;
+		// System.out.println("行数: "+end);
+
+		for (int i = start; i <= end; i++) {
+			lineNumbers.add(i);
+		}
+	}
+
+	// nodeの元ファイルにおける行番号を書き出す
+	private void addLineNumber(ASTNode node) {
+		if (node == null)
+			return;
+
+		int start = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
+		int end = compilationUnit
+				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
+		System.out.println("start is : " + start);
+		System.out.println("end is : " + end);
+
+		for (int i = start; i <= end; i++) {
+			lineNumbers.add(i);
+		}
+	}
+
+	// nodeの最初と最後の行番号を書き出す
+	// javadocは無視
+	private void addLineNumberStartEnd(MethodDeclaration node) {
+		if (node == null)
+			return;
+
+		// getReturnType2のポジションを取得することでJavadocを除外できる
+		int start = compilationUnit
+				.getLineNumber(node.getReturnType2().getStartPosition()) - 1;
+		int end = compilationUnit
+				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
+		System.out.println("start is : " + start);
+		System.out.println("end is : " + end);
+		lineNumbers.add(start);
+		lineNumbers.add(end);
+	}
+
+	// nodeの元ファイルにおける行番号を削除する
+	private void removeLineNumber(ASTNode node) {
+		int start = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
+		int end = compilationUnit
+				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
+
+		for (int i = start; i <= end; i++) {
+			lineNumbers.remove(i);
+		}
+	}
+
+	// 実行ステートメントに対する詳細なクエリを持っているかどうか
+	// 持ってたらtrue
+	private boolean hasSpecificQuery() {
+		return query.methods.size() > 0 || query.variables.size() > 0;
+	}
+
+	// 変数に対する詳細なクエリを持っているかどうか
+	// 持ってたらtrue
+	private boolean hasVariableQuery() {
+		return query.variables.size() > 0;
+	}
+
+	// nameから変数を探す
+	public boolean visit(SimpleName node) {
+		// メソッドのnameにも反応するから変数指定の時だけに動くようにする
+		if (hasVariableQuery()) {
+
+			if (node.resolveBinding() != null) {
+				for (Variable variable : query.variables) {
+					if (!node.resolveBinding().getName().equals(variable.name))
+						continue;
+					// 見つけたやつが変数かどうか判定
+					if (!node.resolveBinding().getKey()
+							.endsWith("#" + variable.name))
+						continue;
+					System.out
+							.println(
+									"検索されたやつがSimpleNameに引っかかった + 変数だ: " + node
+											+ "("
+											+ compilationUnit.getLineNumber(
+													node.getStartPosition())
+											+ ")");
+
+					ASTNode moveUp = moveUpToStatement(node);
+					addLineNumber(moveUp);
+					if (moveUp != null) {
+						// どのメソッド内におるのかも書きだす
+						addLineNumberStartEnd(moveUpToMethodInvocation(node));
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	// これもnameの一種やけど，属性は変数として扱わない
+	public boolean visit(QualifiedName node) {
+		// System.out.println("Qname: "+node);
+		return true;
+
+	}
+
+	// 親を再起でたどっていく．ExpressionStatementまたはVariableDeclarationStatementまで
+	// 検索で引っかかった変数を書きだす
+	// メソッド検索の時はつかわない
+	/**
+	 * @param node
+	 * @return 目的の行
+	 */
+	public ASTNode moveUpToStatement(ASTNode node) {
+		if (node.getParent() == null)
+			return null;
+		System.out.println("moveUp: " + node);
+		// System.out.println(node.getParent());
+		System.out.println(node.getParent().getClass().toString());
+
+		// classを取得して比較する事にした
+		if (!(node.getParent() == null
+				|| node.getParent().getClass().toString()
+						.endsWith("ExpressionStatement")
+				|| node.getParent().getClass().toString()
+						.endsWith("VariableDeclarationStatement"))) {
+			return moveUpToStatement(node.getParent());
+		}
+		System.out.println("どこかみつけた: \n" + node.getParent());
+		Statement statement = (Statement) node.getParent();
+		return statement;
+	}
+
+	// 親を再起でたどっていく．メソッド呼び出しまで
+	/**
+	 * @param node
+	 * @return 目的の行
+	 */
+	public MethodDeclaration moveUpToMethodInvocation(ASTNode node) {
+		// System.out.print("辿るで: "+node.getParent());
+		// System.out.println(node.getParent().getClass().toString());
+
+		// if (! (node.getParent() instanceof MethodInvocation)) {
+		// classを取得して比較する事にした
+		if (!(node.getParent().getClass().toString()
+				.endsWith("MethodDeclaration"))) {
+			return moveUpToMethodInvocation(node.getParent());
+		}
+		System.out.println("どこで呼ばれているかみつけた: \n" + node.getParent());
+		// Statement statement = (Statement)node.getParent();
+		MethodDeclaration statement = (MethodDeclaration) node.getParent();
+		return statement;
+	}
+
+	// メソッド呼び出しに行ける
+	public boolean visit(MethodInvocation node) {
+		for (Method method : query.methods) {
+			if (node.getName().toString().equals(method.name)) {
+				System.out.println("検索されたメソッド呼び出しみつけた: " + node);
+				addLineNumber(node);
+				System.out.println("メソッド呼び出しから，宣言を辿る");
+				// System.out.println(moveUpToMethodInvocation(node));
+
+				// どのメソッド内におるのかも書きだす
+				addLineNumberStartEnd(moveUpToMethodInvocation(node));
+			}
+		}
+		return super.visit(node);
+	}
+
+
+	// メソッド宣言に行ける(nodeにはjavdoc含む)
+	public boolean visit(MethodDeclaration node) {
+		for (Method method : query.methods) {
+			if (node.getName().toString().equals(method.name)) {
+				// Join all modifiers and parameters.
+				addLineNumber(node);
+			}
+		}
+		// 構文エラーがあった場合
+		// TODO ASTNode.MALTORMEDで動くのか確認
+		if ((node.getFlags()
+				& ASTNode.MALFORMED) == ASTNode.MALFORMED) {
+			// System.out.println("構文エラー！ "+ (node.getFlags() &
+			// CompilationUnit.MALFORMED));
 			SyntaxFlg = false;
 		}
 		return true;
 	}
 
-	//アノテーション
+	// アノテーション
 	@Override
 	public boolean visit(MarkerAnnotation node) {
-		//@Overrideとか
-		//nodeをstringに変換
-		String nodeS = String.valueOf(node);
-
-		if(ast == true && anno == false){
-			//anno消す
-			annoDelete(nodeS, true);
-		}else if(ast == false && anno == true){
-			//System.out.println("anno追加"); //$NON-NLS-1$
-			exp += node + "\n"; //$NON-NLS-1$
-		}else if(ast && anno){
-			//改行入れる
-			annoDelete(nodeS, false);
+		// @Overrideとか
+		if (anno) {
+			addLineNumber(node);
+		} else {
+			removeLineNumber(node);
 		}
 		return true;
 	}
+
 	@Override
 	public boolean visit(NormalAnnotation node) {
-		//nodeをstringに変換
-		String nodeS = String.valueOf(node);
-		if(ast == true && anno == false){
-			//anno消す
-			annoDelete(nodeS, true);
-		}else if(ast == false && anno == true){
-			//System.out.println("anno追加"); //$NON-NLS-1$
-			exp += node + "\n"; //$NON-NLS-1$
-		}else if(ast && anno){
-			//改行入れる
-			annoDelete(nodeS, false);
+		if (anno) {
+			addLineNumber(node);
+		} else {
+			removeLineNumber(node);
 		}
-
 		return true;
 	}
+
 	@Override
 	public boolean visit(SingleMemberAnnotation node) {
-		//@SuppressWarnings("unchecked")とか
-		String nodeS = String.valueOf(node);
-
-		if(ast == true && anno == false){
-			//anno消す
-			//nodeをstringに変換
-			annoDelete(nodeS, true);
-
-		}else if(ast == false && anno == true){
-			//anno追加
-			//System.out.println("anno追加"); //$NON-NLS-1$
-			exp += node + "\n"; //$NON-NLS-1$
-		}else if(ast && anno){
-			//改行入れる
-			annoDelete(nodeS, false);
+		// @SuppressWarnings("unchecked")とか
+		if (anno) {
+			addLineNumber(node);
+		} else {
+			removeLineNumber(node);
 		}
 		return true;
 	}
 
-	//annoを消す
-	/**
-	 * @param nodeS
-	 * @param Delete
-	 * @return int
-	 */
-	public int annoDelete(String nodeS, boolean Delete){
-		//一文字ずつ格納
-		String[] nodeSplit = nodeS.split(""); //$NON-NLS-1$
-
-		//expを改行で分割して配列に格納
-		String[] expSplit = exp.split("\n"); //$NON-NLS-1$
-
-		//System.out.println("探すanno is " + nodeS); //$NON-NLS-1$
-		//一行ずつ探していく
-		for(int h=0;h<expSplit.length;h++){
-			//System.out.println(expSplit[h] + " " + h + "行目");
-
-			//expの一行を一文字ずつ格納
-			String[] lineSplit = expSplit[h].split(""); //$NON-NLS-1$
-			int j = 0;
-			int spaceNum = 0;
-			boolean space = false;
-			for(int i=0; i<nodeSplit.length + spaceNum || space == false;i++){
-				//一文字ずつ確認していく
-				//System.out.println(lineSplit[i] + " " + i);
-				//System.out.println(nodeSplit[j] + " " + i);
-				if(nodeSplit[j].equals(lineSplit[i])){
-					//System.out.println("一文字一致");
-					if(space==false){
-						//System.out.println("一文字目! 空白の数 is " + i);
-						spaceNum = i;
-						space = true;
-					}
-					//nodeの次の文字を確認する
-					j++;
-					if(j==nodeSplit.length){
-						//全部一致した
-						//System.out.println("全部一致!!");
-						if(Delete){
-							//annoの部分を消す
-							//System.out.println("anno消去開始");
-							for(int l = spaceNum; l <= spaceNum + nodeSplit.length ; l++){
-								//System.out.println("before eS[l] is " + lineSplit[l]);
-								lineSplit[l] = ""; //$NON-NLS-1$
-								//System.out.println("after eS[l] is " + lineSplit[l]);
-							}
-						}else{
-							//annoの後に改行を入れる
-							lineSplit[spaceNum + nodeSplit.length] += "\n"; //$NON-NLS-1$
-							for(int l=0;l<spaceNum;l++){
-								lineSplit[spaceNum + nodeSplit.length] += " "; //$NON-NLS-1$
-							}
-						}
-						/*
-						for(int l=0;i<lineSplit.length;l++)
-							System.out.print(lineSplit[l]);
-						System.out.println("");
-						 */
-						//expSplitに戻す
-						//h行目のexpSplitを書き換えたので...
-						expSplit[h] = ""; //$NON-NLS-1$
-						for(int l = 0; l < lineSplit.length; l++){
-							expSplit[h] += lineSplit[l];
-						}
-						//expSplitをexpに戻す
-						exp = ""; //$NON-NLS-1$
-						for(int l = 0; l < expSplit.length; l++){
-							exp += expSplit[l] + "\n"; //$NON-NLS-1$
-						}
-					}
-					continue;
-				} else if (lineSplit[i].equals(" ")) { //$NON-NLS-1$
-					//空白なら無視(これでiが増える)
-					continue;
-				}else{
-					//この行に探したいannoない
-					//System.out.println("break");
-					break;
-				}
-			}
-		}
-		return 0;
-	}
-
-	//javadoc
+	// javadoc
 	@Override
 	public boolean visit(Javadoc node) {
-		//System.out.println("jd"); //$NON-NLS-1$
-		if (ast == true && jd == false) {
-			//System.out.println("jd 消す"); //$NON-NLS-1$
-			//nodeをstringに変換
-			String nodeS = String.valueOf(node);
-
-			//expを改行で分割して配列に格納
-			String[] astSplit = exp.split("\n"); //$NON-NLS-1$
-			//nodeつまりjavadocも格納
-			String[] jdSplit = nodeS.split("\n"); //$NON-NLS-1$
-
-			int i = 0; // 注目しているastSplitの位置
-			int j = 0; // 注目しているjdSplitの位置
-			int ast_len, jd_len;
-			ast_len = astSplit.length;
-			jd_len = jdSplit.length;
-
-			/* テキストの最後尾に行き当たるか、パターンが見つかるまで繰り返す */
-			while ( i < ast_len && j < jd_len ) {
-				if(astSplit[i].endsWith(jdSplit[j]) || astSplit[i].startsWith(jdSplit[j])
-						|| jdSplit[j].endsWith(astSplit[i]) || jdSplit[j].startsWith(astSplit[i])){
-					i++;
-					j++;
-				} else {
-					//System.out.println(astSplit[i] + "\n" + jdSplit[j]);
-					i++;
-					j=0;
-				}
-			}
-			if(j == jd_len){//見つかった
-				//System.out.println("見つけた");
-				//各行に改行を戻す
-				for(int l = 0; l < astSplit.length; l++){
-					astSplit[l] += "\n"; //$NON-NLS-1$
-				}
-				//javadocの開始行
-				int startIndex = i-j;
-				int endIndex = j;
-				//javadocの部分を消す
-				for(int l = 0; l < endIndex; l++){
-					//System.out.println("aS[l] is " + astSplit[startIndex + l]);
-					astSplit[startIndex + l] = ""; //$NON-NLS-1$
-					//System.out.println("aS[l] is " + astSplit[startIndex + l]);
-				}
-
-				//astに戻す
-				exp = ""; //$NON-NLS-1$
-				for(int l = 0; l < astSplit.length; l++){
-					exp += astSplit[l];
-				}
-			} else {
-				//System.out.println("javadoc見つからん"); //$NON-NLS-1$
-			}
-		} else if (ast == false && jd == true) {
-			//System.out.println("jd追加"); //$NON-NLS-1$
-			exp += node + "\n"; //$NON-NLS-1$
-
+		if (jd == false) {
+			removeLineNumber(node);
+		} else {
+			addLineNumber(node);
 		}
 		return true;
 	}

@@ -170,8 +170,8 @@ class Diff extends TextBuiltin {
 
 	// 改変オプションcontext
 	@Option(name = "-cx", aliases = "--context", metaVar = "コンテキスト", usage = "指定されたコンテキストを表示")
-	void Context(String type) {
-		diffFmt.setContextFlg(type);
+	void Context(String query) {
+		diffFmt.setContextFlg(query);
 	}
 
 

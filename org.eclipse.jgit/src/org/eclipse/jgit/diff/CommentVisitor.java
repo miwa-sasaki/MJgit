@@ -1,12 +1,18 @@
 package org.eclipse.jgit.diff;
 
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.BlockComment;
 import org.eclipse.jdt.core.dom.Comment;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.LineComment;
+
+import astnode.query.Context;
+import astnode.query.MJQuery;
 
 //コメント解析
 /**
@@ -18,89 +24,104 @@ public class CommentVisitor extends ASTVisitor {
 	CompilationUnit compilationUnit;
 	private String[] source;
 
-	static String comment = new String(""); //$NON-NLS-1$
-
-	static String javadoc = new String(""); //$NON-NLS-1$
-
-	boolean ast;
-
 	boolean com;
 
-	boolean jd;
+	private MJQuery query;
 
-	boolean anno;
+	/**
+	 *
+	 */
+	public Set<Integer> lineNumbers;
+
+	int queryNum;
 
 	// コンストラクタ
 	/**
 	 * @param compilationUnit
 	 * @param source
-	 * @param ast
-	 * @param com
-	 * @param jd
-	 * @param anno
+	 * @param query
+	 * @param lineNumbers
+	 * @param queryNum
 	 */
 	public CommentVisitor(CompilationUnit compilationUnit, String[] source,
-			boolean ast, boolean com, boolean jd, boolean anno) {
+			MJQuery query, Set<Integer> lineNumbers, int queryNum) {
 		super();
 		this.compilationUnit = compilationUnit;
+		// System.out.println("CVのコンストラクタのlineNumbers: \n"+ lineNumbers);
+
 		this.source = source;
+		com = false;
+		if (query.contexts.get(queryNum) == Context.COMMENT)
+			this.com = true;
+		this.lineNumbers = lineNumbers;
+		this.queryNum = queryNum;
+		this.query = query;
 
-		this.ast = ast;
-		this.com = com;
-		this.jd = jd;
-		this.anno = anno;
+		System.out.println("com: " + com);
 
-		// System.out.println(ast);
-		// System.out.println(com);
-		// System.out.println(jd);
-		// System.out.println(anno);
-
+		// ぬるぽ
+		if (lineNumbers == null) {
+			this.lineNumbers = new TreeSet<>();
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean visit(CompilationUnit node) {
-
-		for (Comment comment1 : (List<Comment>) node.getCommentList()) {
-			comment1.accept(new CommentVisitor(node, source, ast, com, jd, anno));
+		for (Comment comment : (List<Comment>) node.getCommentList()) {
+			comment.accept(new CommentVisitor(node, source, query, lineNumbers,
+					queryNum));
 		}
-
 		return super.visit(node);
+	}
+
+	// nodeの元ファイルにおける行番号を書き出す
+	private void addLineNumber(ASTNode node) {
+		// System.out.println("コメントadd");
+		int start = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
+		int end = compilationUnit
+				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
+		// System.out.println("start is : "+ start);
+		// System.out.println("end is : "+ end);
+
+		for (int i = start; i <= end; i++) {
+			lineNumbers.add(i);
+		}
+	}
+
+	// nodeの元ファイルにおける行番号を削除する
+	private void removeLineNumber(ASTNode node) {
+		// System.out.println("コメントremove");
+		int start = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
+		int end = compilationUnit
+				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
+		// System.out.println("start: "+start);
+		// System.out.println("end: "+end);
+
+		for (int i = start; i <= end; i++) {
+			lineNumbers.remove(i);
+		}
 	}
 
 	@Override
 	public boolean visit(LineComment node) {
-		//行数取得
-		int startLineNumber = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
-		String lineComment = source[startLineNumber].trim();
-		//comment += startLineNumber + ":" + lineComment + "\n";
-		comment += lineComment + "\n"; //$NON-NLS-1$
-		//System.out.print(comment);
-
+		// System.out.println("CommentVisitorのラインコメントvisit");
+		if (com) {
+			addLineNumber(node);
+		} else {
+			removeLineNumber(node);
+		}
 		return super.visit(node);
 	}
 
 	@Override
 	public boolean visit(BlockComment node) {
-		int startLineNumber = compilationUnit.getLineNumber(node
-				.getStartPosition()) - 1;
-		int endLineNumber = compilationUnit.getLineNumber(node
-				.getStartPosition() + node.getLength()) - 1;
-
-		StringBuffer blockComment = new StringBuffer();
-
-		for (int lineCount = startLineNumber; lineCount <= endLineNumber; lineCount++) {
-			String blockCommentLine = source[lineCount].trim();
-			blockComment.append(blockCommentLine);
-			if (lineCount != endLineNumber) {
-				blockComment.append("\n"); //$NON-NLS-1$
-			}
+		// System.out.println("CommentVisitorのブロックコメントvisit");
+		if (com) {
+			addLineNumber(node);
+		} else {
+			removeLineNumber(node);
 		}
-		//行数含む
-		//comment += startLineNumber + ":" + blockComment + "\n";
-		comment += blockComment + "\n"; //$NON-NLS-1$
-		//System.out.print(comment);
-
 		return super.visit(node);
 	}
 }

@@ -45,11 +45,6 @@
 package org.eclipse.jgit.diff;
 
 
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.ADD;
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.COPY;
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.DELETE;
@@ -61,20 +56,29 @@ import static org.eclipse.jgit.lib.Constants.encode;
 import static org.eclipse.jgit.lib.Constants.encodeASCII;
 import static org.eclipse.jgit.lib.FileMode.GITLINK;
 
+import java.io.BufferedReader;
 //import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 //import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 //import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
@@ -117,14 +121,20 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.QuotedString;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
-/*
- import astnode.AstVisitor;
- import astnode.CommentVisitor;
- import astnode.Visitor;
- */
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 
-//import astnode.AstVisitor;
-//import astnode.CommentVisitor;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+
+import org.eclipse.jgit.diff.CommentVisitor;
+import org.eclipse.jgit.diff.Visitor;
+import astnode.query.Context;
+import astnode.query.MJQuery;
 
 /**
  * Format a Git style patch script.
@@ -170,6 +180,7 @@ public class DiffFormatter implements AutoCloseable {
 
 	private ContentSource.Pair source;
 
+	// -----------------------------------
 	// コンテキストの種類を覚えておくフラグ．
 	// 1:コンテキスト指定あり,-1:なし
 	private int CxFlg = -1;
@@ -200,6 +211,11 @@ public class DiffFormatter implements AutoCloseable {
 	boolean jd = false;
 
 	boolean anno = false;
+
+	String MJQuery;
+
+	// -----------------------------------
+
 	/**
 	 * Create a new formatter with a default level of context.
 	 *
@@ -374,36 +390,34 @@ public class DiffFormatter implements AutoCloseable {
 	/**
 	 * 指定されたコンテキストに対応するフラグを立てる
 	 *
-	 * @param type
+	 * @param query
 	 *            コンテキストの種類． コマンドか本質を受付
 	 */
-	public void setContextFlg(String type) {
-		if (type.equals("ast")) { //$NON-NLS-1$
-			CxFlg = 1;
-			ast = true;
-			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
-		} else if (type.equals("comment")) { //$NON-NLS-1$
-			CxFlg = 1;
-			com = true;
-			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
-		} else if (type.equals("javadoc")) { //$NON-NLS-1$
-			CxFlg = 1;
-			jd = true;
-			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
-		} else if (type.equals("annotation")) { //$NON-NLS-1$
-			CxFlg = 1;
-			anno = true;
-			//System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$
-		}else{
-			// コンテキスト未設定時に.javaだけを対象としてdiffを行う場合
-			// CxFlg = 2;
+	public void setContextFlg(String query) {
+		/*
+		 * if (query.equals("ast")) { //$NON-NLS-1$ CxFlg = 1; ast = true;
+		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ } else if
+		 * (query.equals("comment")) { //$NON-NLS-1$ CxFlg = 1; com = true;
+		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ } else if
+		 * (query.equals("javadoc")) { //$NON-NLS-1$ CxFlg = 1; jd = true;
+		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ } else if
+		 * (query.equals("annotation")) { //$NON-NLS-1$ CxFlg = 1; anno = true;
+		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ }else{ //
+		 * コンテキスト未設定時に.javaだけを対象としてdiffを行う場合 // CxFlg = 2;
+		 */
 
-			// コンテキスト未設定時にエラーにする場合
-			CxFlg = -1;
-			System.out.println("コンテキストの種類には\"ast\"か\"comment\"か\"javadoc\"か\"annotation\"を指定してください");//$NON-NLS-1$
-			System.exit(-1);
-
+		if (query != null) {
+			System.out.println("クエリ受けとった: " + query);
+			MJQuery = query;
+			CxFlg = 1;
 		}
+		// else {
+		// // コンテキスト未設定時にエラーにする場合
+		// CxFlg = -1;
+		// System.out.println("クエリを指定してください");//$NON-NLS-1$
+		// System.exit(-1);
+		// }
+
 	}
 
 	/**
@@ -1112,49 +1126,50 @@ public class DiffFormatter implements AutoCloseable {
 
 				// ////ここから改変//////
 
+				// 一時ファイルとかおく場所
 				String filePlace = "/Users/miwaaa8/Documents/研究/workspace/files/"; //$NON-NLS-1$
 
 				//cxオプションの有無
-				// -1はオプションなし．普通にdiff実行
-				// 2は-cxあるけどその先の指定なし．.javaにだけ普通にdiffかける
-				if (CxFlg != -1 && CxFlg != 2 && isJavaFile == 1) {
+				// -1はオプションなし．普通にdiff実行やから拡張処理とばす
+				if (CxFlg == 1 && isJavaFile == 1) {
 
-					//System.out.println("cx　オプション！！"); //$NON-NLS-1$
+					System.out.println("cx　オプション！！"); //$NON-NLS-1$
 
 					// RawTextを外部に書き出す
-					//String aRawS = new String(aRaw, "UTF-8"); //$NON-NLS-1$
 					String aRawS = new String(aRaw);
-					//aRawS = "古いのを書き換え"; //$NON-NLS-1$
-					//aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
 					export(filePlace + "aRaw.java", aRawS); //$NON-NLS-1$
 
-					//String bRawS = new String(bRaw, "UTF-8"); //$NON-NLS-1$
 					String bRawS = new String(bRaw);
 					export(filePlace + "bRaw.java", bRawS); //$NON-NLS-1$
 
-					// aRaw_astとaRaw_commentファイルを作成
-					aSyntaxFlg = astnode(filePlace, "aRaw", ast, com, jd, anno); //$NON-NLS-1$
-					//bRaw_astとbRaw_commentを作成
-					bSyntaxFlg = astnode(filePlace, "bRaw", ast, com, jd, anno); //$NON-NLS-1$
+
+					// 分析結果を外部に書きだす
+					exec(filePlace + "aRaw.java", filePlace + "aRaw_exp.java",
+							MJQuery);
+					exec(filePlace + "bRaw.java", filePlace + "bRaw_exp.java",
+							MJQuery);
 
 					//System.out.println("aSyntaxFlg is " + aSyntaxFlg); //$NON-NLS-1$
 					//System.out.println("bSyntaxFlg is " + bSyntaxFlg); //$NON-NLS-1$
 
 					// 構文エラーあった？
-					if (aSyntaxFlg && bSyntaxFlg) {
-						//System.out.println("構文エラーなし"); //$NON-NLS-1$
-
-						// aRawをaRaw_expに書き換え
-						aRawS = readAll(filePlace + "aRaw_exp.java"); //$NON-NLS-1$
-						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
-
-						// bRawをbRaw_expに書き換え
-						bRawS = readAll(filePlace + "bRaw_exp.java"); //$NON-NLS-1$
-						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
-
-					} else {
-						//System.out.println("構文エラーあり"); //$NON-NLS-1$
-					}
+					// 構文エラーのチェックは分析時にやってるから不要
+					// if (aSyntaxFlg && bSyntaxFlg) {
+					// //System.out.println("構文エラーなし"); //$NON-NLS-1$
+					//
+					// // aRawをaRaw_exp(分析結果)に書き換え
+					// aRawS = fileToString(
+					// new File(filePlace + "aRaw_exp.java")); //$NON-NLS-1$
+					// aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+					//
+					// // bRawをbRaw_exp(分析結果)に書き換え
+					// bRawS = fileToString(
+					// new File(filePlace + "bRaw_exp.java")); //$NON-NLS-1$
+					// bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+					//
+					// } else {
+					// //System.out.println("構文エラーあり"); //$NON-NLS-1$
+					// }
 				}
 
 				// ////ここから元ソース////////
@@ -1182,76 +1197,164 @@ public class DiffFormatter implements AutoCloseable {
 		return res;
 	}
 
+	/**
+	 * @param inputFilename
+	 * @param outputFilename
+	 * @param query
+	 */
+	public void exec(String inputFilename, String outputFilename,
+			String query) {
+		boolean ast;
+		boolean com;
+		boolean jd;
+		boolean anno;
 
-	private static boolean astnode(String filePlace, String filename,
-			boolean ast, boolean com, boolean jd, boolean anno)
-					throws IOException {
-		boolean SyntaxFlg = true;
 		// テキストを読み込む
-		String source = readAll(filePlace + filename + ".java"); //$NON-NLS-1$
-		// System.out.println(filename + " is \n" + source);
+		String source = null;
+		try {
+			source = fileToString(new File(inputFilename));
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
 
 		// Create AST Parser
+		// バインディングを実行する設定
 		ASTParser parser = ASTParser.newParser(AST.JLS8);
-		parser.setSource(source.toCharArray()); // sourceはソースコードをString型の文字列に変換したもの
-		CompilationUnit unit = (CompilationUnit) parser
-				.createAST(new NullProgressMonitor());
+		parser.setResolveBindings(true);
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setBindingsRecovery(true);
 
-		if (ast || jd || anno) {
-					Visitor visitor = new Visitor(unit, source.split("\n"), ast, com,jd, anno); //$NON-NLS-1$
+		Map options = JavaCore.getOptions();
+		parser.setCompilerOptions(options);
+		parser.setUnitName(inputFilename);
+
+		// バインディングするための環境設定
+		// 先生の
+		// String[] sources = { "D:\\tmp\\astnode\\example" };
+		// String[] classpath = { "C:\\pbl\\java\\jre\\lib\\rt.jar" };
+		// わいの
+		String[] sources = {
+				"\\Users\\miwaaa8\\Documents\\研究\\workspace\\astnode\\example" };
+		String[] classpath = {
+				"\\Library\\Java\\JavaVirtualMachines\\jdk1.8.0_25.jdk\\Contents\\Home\\jre\\lib\\rt.jar" };
+
+		parser.setEnvironment(classpath, sources, new String[] { "UTF-8" },
+				true);
+		parser.setSource(source.toCharArray());
+
+		CompilationUnit unit = (CompilationUnit) parser.createAST(null);
+
+		MJQuery mjquery = new MJQuery(query, "simple");
+		System.out.println("MJQuery= " + mjquery);
+
+		Set<Integer> lineNumbers = new TreeSet<Integer>();
+		// ひとつのコンテキスト解析途中に使う
+		Set<Integer> tmpLineNumbers = new TreeSet<Integer>();
+		// 各コンテキストの解析結果を次の解析で上書きしない為に使う
+		Set<Integer> finalLineNumbers = new TreeSet<Integer>();
+
+		boolean syntaxFlg = true;
+		int queryNum = 0;
+
+		for (Context context : mjquery.contexts) {
+			System.out.println("コンテキストfor文: " + context);
+			System.out.println("queryNum: " + queryNum);
+			// 構文エラーならループおわり
+			if (!syntaxFlg)
+				break;
+
+			ast = com = jd = anno = false;
+			if (context == Context.STATEMENT)
+				ast = true;
+			if (context == Context.COMMENT)
+				com = true;
+			if (context == Context.JAVADOC)
+				jd = true;
+			if (context == Context.ANNOTATION)
+				anno = true;
+			/*
+			 * System.out.println("Astnode内"); System.out.println("ast: "+ast);
+			 * System.out.println("com: "+com); System.out.println("jd: "+jd);
+			 * System.out.println("anno: "+anno+"\n");
+			 */
+
+			// 該当コンテキストを書き出す
+			// コメント指定された時でも構文エラー見つけるために入らなあかん
+			// if (context == Context.STATEMENT || context == Context.JAVADOC ||
+			// context == Context.ANNOTATION) {
+			Visitor visitor = new Visitor(unit, source.split("\n"), mjquery,
+					null, queryNum);
 			unit.accept(visitor);
-			// System.out.println(Visitor.exp);
-			// 構文エラーの有無をチェック
-			SyntaxFlg = Visitor.SyntaxFlg;
-			//System.out.println("final flg is " + Visitor.SyntaxFlg); //$NON-NLS-1$
+			System.out.println("v.lineNum: " + visitor.lineNumbers);
+			tmpLineNumbers.addAll(visitor.lineNumbers);
+			System.out.println("staのadd後のtmpLineNums: " + tmpLineNumbers);
 
-			// 外部ファイルに出力
-			export(filePlace + filename + "_exp.java", Visitor.exp); //$NON-NLS-1$
-		}
-
-		if (com) {
-			// コメントを解析
-			//System.out.println("comment.javadoc" + CommentVisitor.javadoc); //$NON-NLS-1$
-
-			CommentVisitor commentVisitor = new CommentVisitor(unit,source.split("\n"), ast, com, jd, anno); //$NON-NLS-1$
+			syntaxFlg = visitor.SyntaxFlg;
+			// }
+			// コメントを書き出すor書き込む
+			CommentVisitor commentVisitor = new CommentVisitor(unit,
+					source.split("\n"), mjquery, tmpLineNumbers, queryNum);
 			unit.accept(commentVisitor);
-			// 外部ファイルに出力
+			System.out.println("CV.lineNum: " + commentVisitor.lineNumbers);
+			// 上書きor追記
 			if (com) {
-			export(filePlace + filename + "_exp.java", CommentVisitor.comment); //$NON-NLS-1$
+				// コメントを書き足したい時はadd(追加)
+				System.out.println("コメント追加");
+				lineNumbers.addAll(commentVisitor.lineNumbers);
+			} else {
+				// コメントを削除したい時は上書き
+				System.out.println("コメント削除");
+				lineNumbers = commentVisitor.lineNumbers;
 			}
+			System.out.println("comのadd後のlineNums: " + lineNumbers);
+			queryNum++;
+
+			// つぎのコンテキストのループに持って行かないように退避
+			System.out.println("add前final: " + finalLineNumbers);
+			finalLineNumbers.addAll(lineNumbers);
+			System.out.println("add後final: " + finalLineNumbers);
 		}
 
-		// 出力後に変数初期化
-		// System.out.println(AstVisitor.ast);
-		Visitor.exp = ""; //$NON-NLS-1$
-		//System.out.println("消したあと" + Visitor.exp); //$NON-NLS-1$
-		CommentVisitor.comment = ""; //$NON-NLS-1$
-		//System.out.println("消したあと" + CommentVisitor.javadoc); //$NON-NLS-1$
-
-		return SyntaxFlg;
+		// 外部ファイルに出力
+		// 構文エラーなら分解せずに出力
+		if (syntaxFlg) {
+			export(outputFilename, inputFilename, finalLineNumbers);
+		} else {
+			fileCopy(inputFilename, outputFilename);
+		}
 	}
 
 
-	// 外部ファイルのチェック
-	private static boolean checkBeforeWritefile(File file) {
-		if (file.exists()) {
-			if (file.isFile() && file.canWrite()) {
-				return true;
-			}
-		}
-		return false;
-	}
-
+	// 解析結果の行番号を参照して外部ファイルに出力するメソッド
 	/**
-	 * @param path
-	 * @return　ファイルの中身のString
-	 * @throws IOException
+	 * @param filename
+	 * @param source
+	 * @param set
 	 */
-	// http://qiita.com/penguinshunya/items/353bb1c555f337b0cf6d
-	public static String readAll(final String path) throws IOException {
-		return Files.lines(Paths.get(path), Charset.forName("UTF-8")) //$NON-NLS-1$
-				.collect(
-						Collectors.joining(System.getProperty("line.separator"))); //$NON-NLS-1$
+	public static void export(String filename, String source,
+			Set<Integer> set) {
+		try {
+			List<String> lines = Files.readAllLines(Paths.get(source));
+
+			StringBuffer buffer = new StringBuffer();
+			for (int i = 0; i < lines.size(); i++) {
+				if (set.contains(i)) {
+					buffer.append(lines.get(i) + "\n");
+					set.remove(i);
+				} else {
+					buffer.append("\n");
+				}
+			}
+			// 最後の一個改行多いから消す
+			buffer.deleteCharAt(buffer.length() - 1);
+			Files.write(Paths.get(filename), String.valueOf(buffer).getBytes());
+			System.out.println("--------------");
+			System.out.println(buffer);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
 	}
 
 	/**
@@ -1261,8 +1364,11 @@ public class DiffFormatter implements AutoCloseable {
 	// 解析結果を外部ファイルに出力するメソッド
 	public static void export(String filename, String body) {
 		// ファイル名を編集
-		//filename = "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/" + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
-		//filename = "/org.eclipse.jgit.pgm/src/files/" + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
+		// filename =
+		// "/Users/miwaaa8/Documents/研究/workspace/jgit/org.eclipse.jgit.pgm/src/files/"
+		// + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
+		// filename = "/org.eclipse.jgit.pgm/src/files/" + filename + ".java";
+		// //$NON-NLS-1$ //$NON-NLS-2$
 
 		// ファイル作成
 		File newfile = new File(filename);
@@ -1281,15 +1387,90 @@ public class DiffFormatter implements AutoCloseable {
 			if (checkBeforeWritefile(file)) {
 				FileWriter filewriter = new FileWriter(file);
 				filewriter.write(body);
-				//System.out.println(filename + "に書き込み完了"); //$NON-NLS-1$
+				// System.out.println(filename + "に書き込み完了"); //$NON-NLS-1$
 				filewriter.close();
 			} else {
-				//System.out.println(filename + "に書き込めません"); //$NON-NLS-1$
+				// System.out.println(filename + "に書き込めません"); //$NON-NLS-1$
 			}
 		} catch (IOException e) {
 			System.out.println(e);
 		}
 	}
+
+	// 外部ファイルのチェック
+	private static boolean checkBeforeWritefile(File file) {
+		if (file.exists()) {
+			if (file.isFile() && file.canWrite()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	// ファイル内容を文字列化するメソッド
+	/**
+	 * @param file
+	 * @return 文字列化されたstring
+	 * @throws IOException
+	 */
+	public static String fileToString(File file) throws IOException {
+		BufferedReader br = null;
+		try {
+			// ファイルを読み込むバッファドリーダを作成します。
+			br = new BufferedReader(
+					new InputStreamReader(new FileInputStream(file)));
+			// 読み込んだ文字列を保持するストリングバッファを用意します。
+			StringBuffer sb = new StringBuffer();
+			// ファイルから読み込んだ一文字を保存する変数です。
+			int c;
+			// ファイルから１文字ずつ読み込み、バッファへ追加します。
+			while ((c = br.read()) != -1) {
+				sb.append((char) c);
+			}
+			// バッファの内容を文字列化して返します。
+			return sb.toString();
+		} finally {
+			// リーダを閉じます。
+			br.close();
+		}
+	}
+
+	/**
+	 * @param in
+	 * @param out
+	 */
+	public void fileCopy(String in, String out) {
+
+		File fileIn = new File(in);
+		File fileOut = new File(out);
+
+		// FileChannelクラスのオブジェクトを生成する
+		FileChannel inCh = null;
+		try {
+			inCh = new FileInputStream(fileIn).getChannel();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		FileChannel outCh = null;
+		try {
+			outCh = new FileOutputStream(fileOut).getChannel();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		// transferToメソッドを使用してファイルをコピーする
+		try {
+			inCh.transferTo(0, inCh.size(), outCh);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	// --------------------------------------------
 
 	private EditList diff(RawText a, RawText b) {
 		return diffAlgorithm.diff(comparator, a, b);

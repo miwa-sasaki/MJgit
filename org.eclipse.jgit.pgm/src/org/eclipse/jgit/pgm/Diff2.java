@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010, Google Inc.
- * Copyright (C) 2006-2008, Robin Rosenberg <robin.rosenberg@dewire.com>
- * Copyright (C) 2008, Shawn O. Pearce <spearce@spearce.org>
+ * Copyright (C) 2009, Christian Halstrick <christian.halstrick@sap.com>
+ * Copyright (C) 2009, Johannes E. Schindelin
+ * Copyright (C) 2009, Johannes Schindelin <johannes.schindelin@gmx.de>
  * and other copyright owners as documented in the project's IP log.
  *
  * This program and the accompanying materials are made available
@@ -45,52 +45,54 @@
 
 package org.eclipse.jgit.pgm;
 
+import static java.lang.Integer.valueOf;
+import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.Constants.OBJECT_ID_STRING_LENGTH;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-import java.util.TimeZone;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jgit.diff.DiffAlgorithm;
+import org.eclipse.jgit.diff.DiffAlgorithm.SupportedAlgorithm;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.diff.RenameDetector;
-import org.eclipse.jgit.errors.CorruptObjectException;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.FileMode;
+import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.TextProgressMonitor;
 import org.eclipse.jgit.pgm.internal.CLIText;
 import org.eclipse.jgit.pgm.opt.PathTreeFilterHandler;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevTag;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.io.ThrowingPrintWriter;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
-@Command(common = true, usage = "usage_show")
-class Show extends TextBuiltin {
-	private final TimeZone myTZ = TimeZone.getDefault();
-
-	private final DateFormat fmt;
-
+@Command(common = true, usage = "usage_ShowDiffs")
+class Diff2 extends TextBuiltin {
 	private DiffFormatter diffFmt;
 
-	@Argument(index = 0, metaVar = "metaVar_object")
-	private String objectName;
+	@Argument(index = 0, metaVar = "metaVar_treeish")
+	private AbstractTreeIterator oldTree;
 
-	@Option(name = "--", metaVar = "metaVar_path", multiValued = true, handler = PathTreeFilterHandler.class)
-	protected TreeFilter pathFilter = TreeFilter.ALL;
+	@Argument(index = 1, metaVar = "metaVar_treeish")
+	private AbstractTreeIterator newTree;
 
-	// BEGIN -- Options shared with Diff
+	@Option(name = "--cached", usage = "usage_cached")
+	private boolean cached;
+
+	@Option(name = "--", metaVar = "metaVar_paths", multiValued = true, handler = PathTreeFilterHandler.class)
+	private TreeFilter pathFilter = TreeFilter.ALL;
+
+	// BEGIN -- Options shared with Log
 	@Option(name = "-p", usage = "usage_showPatch")
 	boolean showPatch;
 
@@ -100,6 +102,11 @@ class Show extends TextBuiltin {
 	@Option(name = "--no-renames", usage = "usage_noRenames")
 	void noRenames(@SuppressWarnings("unused") boolean on) {
 		detectRenames = Boolean.FALSE;
+	}
+
+	@Option(name = "--algorithm", metaVar = "metaVar_diffAlg", usage = "usage_diffAlgorithm")
+	void setAlgorithm(SupportedAlgorithm s) {
+		diffFmt.setDiffAlgorithm(DiffAlgorithm.getAlgorithm(s));
 	}
 
 	@Option(name = "-l", usage = "usage_renameLimit")
@@ -140,7 +147,7 @@ class Show extends TextBuiltin {
 
 	@Option(name = "--full-index")
 	void abbrev(@SuppressWarnings("unused") boolean on) {
-		diffFmt.setAbbreviationLength(Constants.OBJECT_ID_STRING_LENGTH);
+		diffFmt.setAbbreviationLength(OBJECT_ID_STRING_LENGTH);
 	}
 
 	@Option(name = "--src-prefix", usage = "usage_srcPrefix")
@@ -159,18 +166,14 @@ class Show extends TextBuiltin {
 		diffFmt.setNewPrefix(""); //$NON-NLS-1$
 	}
 
-	// END -- Options shared with Diff
+	// END -- Options shared with Log
 
 	// 改変オプションcontext
 	@Option(name = "-cx", aliases = "--context", metaVar = "コンテキスト", usage = "指定されたコンテキストを表示")
-	void Context(String query) {
-		diffFmt.setContextFlg(query);
+	void Context(String type) {
+		diffFmt.setContextFlg(type);
 	}
 
-
-	Show() {
-		fmt = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy ZZZZZ", Locale.US); //$NON-NLS-1$
-	}
 
 	@Override
 	protected void init(final Repository repository, final String gitDir) {
@@ -178,11 +181,31 @@ class Show extends TextBuiltin {
 		diffFmt = new DiffFormatter(new BufferedOutputStream(outs));
 	}
 
-	@SuppressWarnings("boxing")
 	@Override
 	protected void run() throws Exception {
 		diffFmt.setRepository(db);
 		try {
+			if (cached) {
+				if (oldTree == null) {
+					ObjectId head = db.resolve(HEAD + "^{tree}"); //$NON-NLS-1$
+					if (head == null)
+						die(MessageFormat.format(CLIText.get().notATree, HEAD));
+					CanonicalTreeParser p = new CanonicalTreeParser();
+					try (ObjectReader reader = db.newObjectReader()) {
+						p.reset(reader, head);
+					}
+					oldTree = p;
+				}
+				newTree = new DirCacheIterator(db.readDirCache());
+			} else if (oldTree == null) {
+				oldTree = new DirCacheIterator(db.readDirCache());
+				newTree = new FileTreeIterator(db);
+			} else if (newTree == null)
+				newTree = new FileTreeIterator(db);
+
+			TextProgressMonitor pm = new TextProgressMonitor(errw);
+			pm.setDelayStart(2, TimeUnit.SECONDS);
+			diffFmt.setProgressMonitor(pm);
 			diffFmt.setPathFilter(pathFilter);
 			if (detectRenames != null)
 				diffFmt.setDetectRenames(detectRenames.booleanValue());
@@ -191,43 +214,19 @@ class Show extends TextBuiltin {
 				rd.setRenameLimit(renameLimit.intValue());
 			}
 
-			ObjectId objectId;
-			if (objectName == null)
-				objectId = db.resolve(Constants.HEAD);
-			else
-				objectId = db.resolve(objectName);
+			if (showNameAndStatusOnly) {
+				nameStatus(outw, diffFmt.scan(oldTree, newTree));
+				outw.flush();
 
-			try (RevWalk rw = new RevWalk(db)) {
-				RevObject obj = rw.parseAny(objectId);
-				while (obj instanceof RevTag) {
-					show((RevTag) obj);
-					obj = ((RevTag) obj).getObject();
-					rw.parseBody(obj);
-				}
+			} else {
 
-				switch (obj.getType()) {
-				case Constants.OBJ_COMMIT:
-					show(rw, (RevCommit) obj);
-					break;
+				/*
+				 * System.out.println("oldTree is " + oldTree + "\nnewTree is "
+				 * //$NON-NLS-1$ //$NON-NLS-2$ + newTree);
+				 */
 
-				case Constants.OBJ_TREE:
-					outw.print("tree "); //$NON-NLS-1$
-					outw.print(objectName);
-					outw.println();
-					outw.println();
-					show((RevTree) obj);
-					break;
-
-				case Constants.OBJ_BLOB:
-					db.open(obj, obj.getType()).copyTo(System.out);
-					outw.flush();
-					break;
-
-				default:
-					throw die(MessageFormat.format(
-							CLIText.get().cannotReadBecause, obj.name(),
-							obj.getType()));
-				}
+				diffFmt.format(oldTree, newTree);
+				diffFmt.flush();
 			}
 		} finally {
 			// 最後にファイルの数出力
@@ -238,94 +237,30 @@ class Show extends TextBuiltin {
 		}
 	}
 
-	private void show(RevTag tag) throws IOException {
-		outw.print(CLIText.get().tagLabel);
-		outw.print(" "); //$NON-NLS-1$
-		outw.print(tag.getTagName());
-		outw.println();
-
-		final PersonIdent tagger = tag.getTaggerIdent();
-		if (tagger != null) {
-			outw.println(MessageFormat.format(CLIText.get().taggerInfo,
-					tagger.getName(), tagger.getEmailAddress()));
-
-			final TimeZone taggerTZ = tagger.getTimeZone();
-			fmt.setTimeZone(taggerTZ != null ? taggerTZ : myTZ);
-			outw.println(MessageFormat.format(CLIText.get().dateInfo,
-					fmt.format(tagger.getWhen())));
-		}
-
-		outw.println();
-		final String[] lines = tag.getFullMessage().split("\n"); //$NON-NLS-1$
-		for (final String s : lines) {
-			outw.print("    "); //$NON-NLS-1$
-			outw.print(s);
-			outw.println();
-		}
-
-		outw.println();
-	}
-
-	private void show(RevTree obj) throws MissingObjectException,
-			IncorrectObjectTypeException, CorruptObjectException, IOException {
-		try (final TreeWalk walk = new TreeWalk(db)) {
-			walk.reset();
-			walk.addTree(obj);
-
-			while (walk.next()) {
-				outw.print(walk.getPathString());
-				final FileMode mode = walk.getFileMode(0);
-				if (mode == FileMode.TREE)
-					outw.print("/"); //$NON-NLS-1$
-				outw.println();
+	static void nameStatus(ThrowingPrintWriter out, List<DiffEntry> files)
+			throws IOException {
+		for (DiffEntry ent : files) {
+			switch (ent.getChangeType()) {
+			case ADD:
+				out.println("A\t" + ent.getNewPath()); //$NON-NLS-1$
+				break;
+			case DELETE:
+				out.println("D\t" + ent.getOldPath()); //$NON-NLS-1$
+				break;
+			case MODIFY:
+				out.println("M\t" + ent.getNewPath()); //$NON-NLS-1$
+				break;
+			case COPY:
+				out.format("C%1$03d\t%2$s\t%3$s", valueOf(ent.getScore()), // //$NON-NLS-1$
+						ent.getOldPath(), ent.getNewPath());
+				out.println();
+				break;
+			case RENAME:
+				out.format("R%1$03d\t%2$s\t%3$s", valueOf(ent.getScore()), // //$NON-NLS-1$
+						ent.getOldPath(), ent.getNewPath());
+				out.println();
+				break;
 			}
 		}
-	}
-
-	private void show(RevWalk rw, final RevCommit c) throws Exception {
-		char[] outbuffer = new char[Constants.OBJECT_ID_LENGTH * 2];
-
-		outw.print(CLIText.get().commitLabel);
-		outw.print(" "); //$NON-NLS-1$
-		c.getId().copyTo(outbuffer, outw);
-		outw.println();
-
-		final PersonIdent author = c.getAuthorIdent();
-		outw.println(MessageFormat.format(CLIText.get().authorInfo,
-				author.getName(), author.getEmailAddress()));
-
-		final TimeZone authorTZ = author.getTimeZone();
-		fmt.setTimeZone(authorTZ != null ? authorTZ : myTZ);
-		outw.println(MessageFormat.format(CLIText.get().dateInfo,
-				fmt.format(author.getWhen())));
-
-		outw.println();
-		final String[] lines = c.getFullMessage().split("\n"); //$NON-NLS-1$
-		for (final String s : lines) {
-			outw.print("    "); //$NON-NLS-1$
-			outw.print(s);
-			outw.println();
-		}
-
-		outw.println();
-		if (c.getParentCount() == 1) {
-			rw.parseHeaders(c.getParent(0));
-			showDiff(c);
-		}
-		outw.flush();
-	}
-
-	private void showDiff(RevCommit c) throws IOException {
-		final RevTree a = c.getParent(0).getTree();
-		final RevTree b = c.getTree();
-
-		if (showNameAndStatusOnly)
-			Diff.nameStatus(outw, diffFmt.scan(a, b));
-		else {
-			outw.flush();
-			diffFmt.format(a, b);
-			diffFmt.flush();
-		}
-		outw.println();
 	}
 }
