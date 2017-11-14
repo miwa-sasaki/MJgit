@@ -29,41 +29,7 @@ public class MJQuery {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		/*
-		 * System.out.println(new MJQuery("method.name=main&method.type=int",
-		 * "simple")); System.out.println(new
-		 * MJQuery("variable.name=main&variable.type=int", "simple"));
-		 * System.out.println(new MJQuery("method.name=main&variable.type=int",
-		 * "simple")); System.out.println(new MJQuery("context=comment",
-		 * "simple"));//コメントだけ System.out.println(new
-		 * MJQuery("context=annotation", "simple"));//アノテーションだけ
-		 * System.out.println(new MJQuery("context=statement",
-		 * "simple"));//ステートメントの詳細指定しない
-		 * 
-		 * //コンテキストの複数指定もクエリ的にはok System.out.println(new
-		 * MJQuery("context=comment&context=annotation", "simple"));
-		 * System.out.println(new MJQuery("context=comment&method.name=main",
-		 * "simple"));
-		 */
 
-
-		//System.out.println(new MJQuery("method.name=main", "simple"));
-		// System.out.println(new
-		// MJQuery("method.name=main&method.name=toString", "simple"));
-		// System.out.println(new MJQuery("method.name=main&context=statement",
-		// "simple"));
-
-		//System.out.println(new MJQuery("method.name=toString&method.name=main", "simple"));
-
-
-		//System.out.println(new MJQuery("variable.name=tmp&variable.name=j", "simple"));
-
-
-		//JSON形式(無理)
-		/*
-		System.out.println(new MJQuery("{\"method\": [{\"name\": \"main\", \"type\": \"int\"}]}", "json"));
-		System.out.println(new MJQuery("{\"method\": [{\"name\": \"main\", \"type\": \"int\"}, {\"name\": \"toString\", \"type\": \"int\"}]}", "json"));
-		 */
 	}
 
 	/**
@@ -122,7 +88,7 @@ public class MJQuery {
 				}
 				// contextを指定した場合
 			} else if (left.startsWith("context")) {
-				System.out.println("contextを指定");
+				// System.out.println("contextを指定");
 				if(right.matches("comment")) {
 					contexts.add(Context.COMMENT);
 				} else if (right.matches("annotation")) {

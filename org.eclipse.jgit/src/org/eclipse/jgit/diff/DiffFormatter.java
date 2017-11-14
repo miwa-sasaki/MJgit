@@ -394,30 +394,12 @@ public class DiffFormatter implements AutoCloseable {
 	 *            コンテキストの種類． コマンドか本質を受付
 	 */
 	public void setContextFlg(String query) {
-		/*
-		 * if (query.equals("ast")) { //$NON-NLS-1$ CxFlg = 1; ast = true;
-		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ } else if
-		 * (query.equals("comment")) { //$NON-NLS-1$ CxFlg = 1; com = true;
-		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ } else if
-		 * (query.equals("javadoc")) { //$NON-NLS-1$ CxFlg = 1; jd = true;
-		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ } else if
-		 * (query.equals("annotation")) { //$NON-NLS-1$ CxFlg = 1; anno = true;
-		 * //System.out.println("CxFlg is " + CxFlg); //$NON-NLS-1$ }else{ //
-		 * コンテキスト未設定時に.javaだけを対象としてdiffを行う場合 // CxFlg = 2;
-		 */
 
 		if (query != null) {
-			System.out.println("クエリ受けとった: " + query);
+			// System.out.println("クエリ受けとった: " + query);
 			MJQuery = query;
 			CxFlg = 1;
 		}
-		// else {
-		// // コンテキスト未設定時にエラーにする場合
-		// CxFlg = -1;
-		// System.out.println("クエリを指定してください");//$NON-NLS-1$
-		// System.exit(-1);
-		// }
-
 	}
 
 	/**
@@ -1151,8 +1133,10 @@ public class DiffFormatter implements AutoCloseable {
 							filePlace + "bRaw_exp.java",
 							MJQuery);
 
-					System.out.println("aSyntaxFlg is " + aSyntaxFlg); //$NON-NLS-1$
-					System.out.println("bSyntaxFlg is " + bSyntaxFlg); //$NON-NLS-1$
+					// System.out.println("aSyntaxFlg is " + aSyntaxFlg);
+					// //$NON-NLS-1$
+					// System.out.println("bSyntaxFlg is " + bSyntaxFlg);
+					// //$NON-NLS-1$
 
 					// TODO: 両方のファイルの構文エラーチェック
 
@@ -1247,7 +1231,7 @@ public class DiffFormatter implements AutoCloseable {
 		CompilationUnit unit = (CompilationUnit) parser.createAST(null);
 
 		MJQuery mjquery = new MJQuery(query, "simple");
-		System.out.println("MJQuery= " + mjquery);
+		// System.out.println("MJQuery= " + mjquery);
 
 		Set<Integer> lineNumbers = new TreeSet<Integer>();
 		// ひとつのコンテキスト解析途中に使う
@@ -1274,11 +1258,6 @@ public class DiffFormatter implements AutoCloseable {
 				jd = true;
 			if (context == Context.ANNOTATION)
 				anno = true;
-			/*
-			 * System.out.println("Astnode内"); System.out.println("ast: "+ast);
-			 * System.out.println("com: "+com); System.out.println("jd: "+jd);
-			 * System.out.println("anno: "+anno+"\n");
-			 */
 
 			// 該当コンテキストを書き出す
 			// コメント指定された時でも構文エラー見つけるために入らなあかん
@@ -1320,11 +1299,11 @@ public class DiffFormatter implements AutoCloseable {
 		// 外部ファイルに出力
 		// 構文エラーなら分解せずに出力
 		if (syntaxFlg) {
-			System.out.println("構文エラーないから解析したやつ出力するよ");
+			// System.out.println("構文エラーないから解析したやつ出力するよ");
 			export(outputFilename, inputFilename, finalLineNumbers);
 			return true;
 		} else {
-			System.out.println("構文エラー！！！");
+			// System.out.println("構文エラー！！！");
 			fileCopy(inputFilename, outputFilename);
 			return false;
 		}

@@ -70,10 +70,6 @@ public class Visitor extends ASTVisitor {
 			this.jd = true;
 		if (query.contexts.get(queryNum) == Context.ANNOTATION)
 			this.anno = true;
-		/*
-		 * System.out.println("ast: "+ast); System.out.println("com: "+com);
-		 * System.out.println("jd: "+jd); System.out.println("anno: "+anno);
-		 */
 
 		this.query = query;
 		// this.lineNumbers = new TreeSet<>();
