@@ -99,7 +99,7 @@ public class Visitor extends ASTVisitor {
 			if (!hasSpecificQuery()) {
 				// 詳細なクエリが無い場合
 				// 全部書き出す(jd, anno, comの除去はそれぞれのvisitorがフラグをみてやってくれる)
-				System.out.println("STATEMENT全部指定");
+				// System.out.println("STATEMENT全部指定");
 				addLineNumberAll(source);
 			}
 		}
@@ -125,8 +125,8 @@ public class Visitor extends ASTVisitor {
 		int start = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
 		int end = compilationUnit
 				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
-		System.out.println("start is : " + start);
-		System.out.println("end is : " + end);
+		// System.out.println("start is : " + start);
+		// System.out.println("end is : " + end);
 
 		for (int i = start; i <= end; i++) {
 			lineNumbers.add(i);
@@ -144,8 +144,8 @@ public class Visitor extends ASTVisitor {
 				.getLineNumber(node.getReturnType2().getStartPosition()) - 1;
 		int end = compilationUnit
 				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
-		System.out.println("start is : " + start);
-		System.out.println("end is : " + end);
+		// System.out.println("start is : " + start);
+		// System.out.println("end is : " + end);
 		lineNumbers.add(start);
 		lineNumbers.add(end);
 	}
@@ -186,13 +186,13 @@ public class Visitor extends ASTVisitor {
 					if (!node.resolveBinding().getKey()
 							.endsWith("#" + variable.name))
 						continue;
-					System.out
-							.println(
-									"検索されたやつがSimpleNameに引っかかった + 変数だ: " + node
-											+ "("
-											+ compilationUnit.getLineNumber(
-													node.getStartPosition())
-											+ ")");
+					// System.out
+					// .println(
+					// "検索されたやつがSimpleNameに引っかかった + 変数だ: " + node
+					// + "("
+					// + compilationUnit.getLineNumber(
+					// node.getStartPosition())
+					// + ")");
 
 					ASTNode moveUp = moveUpToStatement(node);
 					addLineNumber(moveUp);
@@ -223,9 +223,9 @@ public class Visitor extends ASTVisitor {
 	public ASTNode moveUpToStatement(ASTNode node) {
 		if (node.getParent() == null)
 			return null;
-		System.out.println("moveUp: " + node);
+		// System.out.println("moveUp: " + node);
 		// System.out.println(node.getParent());
-		System.out.println(node.getParent().getClass().toString());
+		// System.out.println(node.getParent().getClass().toString());
 
 		// classを取得して比較する事にした
 		if (!(node.getParent() == null
@@ -235,7 +235,7 @@ public class Visitor extends ASTVisitor {
 						.endsWith("VariableDeclarationStatement"))) {
 			return moveUpToStatement(node.getParent());
 		}
-		System.out.println("どこかみつけた: \n" + node.getParent());
+		// System.out.println("どこかみつけた: \n" + node.getParent());
 		Statement statement = (Statement) node.getParent();
 		return statement;
 	}
@@ -255,7 +255,7 @@ public class Visitor extends ASTVisitor {
 				.endsWith("MethodDeclaration"))) {
 			return moveUpToMethodInvocation(node.getParent());
 		}
-		System.out.println("どこで呼ばれているかみつけた: \n" + node.getParent());
+		// System.out.println("どこで呼ばれているかみつけた: \n" + node.getParent());
 		// Statement statement = (Statement)node.getParent();
 		MethodDeclaration statement = (MethodDeclaration) node.getParent();
 		return statement;
@@ -265,9 +265,9 @@ public class Visitor extends ASTVisitor {
 	public boolean visit(MethodInvocation node) {
 		for (Method method : query.methods) {
 			if (node.getName().toString().equals(method.name)) {
-				System.out.println("検索されたメソッド呼び出しみつけた: " + node);
+				// System.out.println("検索されたメソッド呼び出しみつけた: " + node);
 				addLineNumber(node);
-				System.out.println("メソッド呼び出しから，宣言を辿る");
+				// System.out.println("メソッド呼び出しから，宣言を辿る");
 				// System.out.println(moveUpToMethodInvocation(node));
 
 				// どのメソッド内におるのかも書きだす

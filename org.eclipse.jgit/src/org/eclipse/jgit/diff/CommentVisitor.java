@@ -57,7 +57,7 @@ public class CommentVisitor extends ASTVisitor {
 		this.queryNum = queryNum;
 		this.query = query;
 
-		System.out.println("com: " + com);
+		// System.out.println("com: " + com);
 
 		// ぬるぽ
 		if (lineNumbers == null) {

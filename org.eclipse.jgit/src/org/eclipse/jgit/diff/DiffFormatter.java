@@ -1133,7 +1133,7 @@ public class DiffFormatter implements AutoCloseable {
 				// -1はオプションなし．普通にdiff実行やから拡張処理とばす
 				if (CxFlg == 1 && isJavaFile == 1) {
 
-					System.out.println("cx　オプション！！"); //$NON-NLS-1$
+					// System.out.println("cx オプション！！"); //$NON-NLS-1$
 
 					// RawTextを外部に書き出す
 					String aRawS = new String(aRaw);
@@ -1144,32 +1144,33 @@ public class DiffFormatter implements AutoCloseable {
 
 
 					// 分析結果を外部に書きだす
-					exec(filePlace + "aRaw.java", filePlace + "aRaw_exp.java",
+					aSyntaxFlg = exec(filePlace + "aRaw.java",
+							filePlace + "aRaw_exp.java",
 							MJQuery);
-					exec(filePlace + "bRaw.java", filePlace + "bRaw_exp.java",
+					bSyntaxFlg = exec(filePlace + "bRaw.java",
+							filePlace + "bRaw_exp.java",
 							MJQuery);
 
-					//System.out.println("aSyntaxFlg is " + aSyntaxFlg); //$NON-NLS-1$
-					//System.out.println("bSyntaxFlg is " + bSyntaxFlg); //$NON-NLS-1$
+					System.out.println("aSyntaxFlg is " + aSyntaxFlg); //$NON-NLS-1$
+					System.out.println("bSyntaxFlg is " + bSyntaxFlg); //$NON-NLS-1$
+
+					// TODO: 両方のファイルの構文エラーチェック
 
 					// 構文エラーあった？
-					// 構文エラーのチェックは分析時にやってるから不要
-					// if (aSyntaxFlg && bSyntaxFlg) {
-					// //System.out.println("構文エラーなし"); //$NON-NLS-1$
+					if (aSyntaxFlg && bSyntaxFlg) {
+						// System.out.println("構文エラーなし"); //$NON-NLS-1$
+
+					// aRawをaRaw_exp(分析結果)に書き換え
+					aRawS = fileToString(new File(filePlace + "aRaw_exp.java")); //$NON-NLS-1$
+					aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+
+					// bRawをbRaw_exp(分析結果)に書き換え
+					bRawS = fileToString(new File(filePlace + "bRaw_exp.java")); //$NON-NLS-1$
+					bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 					//
-					// // aRawをaRaw_exp(分析結果)に書き換え
-					// aRawS = fileToString(
-					// new File(filePlace + "aRaw_exp.java")); //$NON-NLS-1$
-					// aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
-					//
-					// // bRawをbRaw_exp(分析結果)に書き換え
-					// bRawS = fileToString(
-					// new File(filePlace + "bRaw_exp.java")); //$NON-NLS-1$
-					// bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
-					//
-					// } else {
-					// //System.out.println("構文エラーあり"); //$NON-NLS-1$
-					// }
+					} else {
+						// System.out.println("構文エラーあり"); //$NON-NLS-1$
+					}
 				}
 
 				// ////ここから元ソース////////
@@ -1202,7 +1203,7 @@ public class DiffFormatter implements AutoCloseable {
 	 * @param outputFilename
 	 * @param query
 	 */
-	public void exec(String inputFilename, String outputFilename,
+	public boolean exec(String inputFilename, String outputFilename,
 			String query) {
 		boolean ast;
 		boolean com;
@@ -1215,7 +1216,7 @@ public class DiffFormatter implements AutoCloseable {
 			source = fileToString(new File(inputFilename));
 		} catch (IOException e) {
 			e.printStackTrace();
-			return;
+			return false;
 		}
 
 		// Create AST Parser
@@ -1258,8 +1259,8 @@ public class DiffFormatter implements AutoCloseable {
 		int queryNum = 0;
 
 		for (Context context : mjquery.contexts) {
-			System.out.println("コンテキストfor文: " + context);
-			System.out.println("queryNum: " + queryNum);
+			// System.out.println("コンテキストfor文: " + context);
+			// System.out.println("queryNum: " + queryNum);
 			// 構文エラーならループおわり
 			if (!syntaxFlg)
 				break;
@@ -1286,9 +1287,9 @@ public class DiffFormatter implements AutoCloseable {
 			Visitor visitor = new Visitor(unit, source.split("\n"), mjquery,
 					null, queryNum);
 			unit.accept(visitor);
-			System.out.println("v.lineNum: " + visitor.lineNumbers);
+			// System.out.println("v.lineNum: " + visitor.lineNumbers);
 			tmpLineNumbers.addAll(visitor.lineNumbers);
-			System.out.println("staのadd後のtmpLineNums: " + tmpLineNumbers);
+			// System.out.println("staのadd後のtmpLineNums: " + tmpLineNumbers);
 
 			syntaxFlg = visitor.SyntaxFlg;
 			// }
@@ -1296,32 +1297,36 @@ public class DiffFormatter implements AutoCloseable {
 			CommentVisitor commentVisitor = new CommentVisitor(unit,
 					source.split("\n"), mjquery, tmpLineNumbers, queryNum);
 			unit.accept(commentVisitor);
-			System.out.println("CV.lineNum: " + commentVisitor.lineNumbers);
+			// System.out.println("CV.lineNum: " + commentVisitor.lineNumbers);
 			// 上書きor追記
 			if (com) {
 				// コメントを書き足したい時はadd(追加)
-				System.out.println("コメント追加");
+				// System.out.println("コメント追加");
 				lineNumbers.addAll(commentVisitor.lineNumbers);
 			} else {
 				// コメントを削除したい時は上書き
-				System.out.println("コメント削除");
+				// System.out.println("コメント削除");
 				lineNumbers = commentVisitor.lineNumbers;
 			}
-			System.out.println("comのadd後のlineNums: " + lineNumbers);
+			// System.out.println("comのadd後のlineNums: " + lineNumbers);
 			queryNum++;
 
 			// つぎのコンテキストのループに持って行かないように退避
-			System.out.println("add前final: " + finalLineNumbers);
+			// System.out.println("add前final: " + finalLineNumbers);
 			finalLineNumbers.addAll(lineNumbers);
-			System.out.println("add後final: " + finalLineNumbers);
+			// System.out.println("add後final: " + finalLineNumbers);
 		}
 
 		// 外部ファイルに出力
 		// 構文エラーなら分解せずに出力
 		if (syntaxFlg) {
+			System.out.println("構文エラーないから解析したやつ出力するよ");
 			export(outputFilename, inputFilename, finalLineNumbers);
+			return true;
 		} else {
+			System.out.println("構文エラー！！！");
 			fileCopy(inputFilename, outputFilename);
+			return false;
 		}
 	}
 
@@ -1349,8 +1354,8 @@ public class DiffFormatter implements AutoCloseable {
 			// 最後の一個改行多いから消す
 			buffer.deleteCharAt(buffer.length() - 1);
 			Files.write(Paths.get(filename), String.valueOf(buffer).getBytes());
-			System.out.println("--------------");
-			System.out.println(buffer);
+			// System.out.println("--------------");
+			// System.out.println(buffer);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
