@@ -388,7 +388,7 @@ public class DiffFormatter implements AutoCloseable {
 	}
 
 	/**
-	 * 指定されたコンテキストに対応するフラグを立てる
+	 * diff, showコマンドで指定されたコンテキストに対応するフラグを立てる
 	 *
 	 * @param query
 	 *            コンテキストの種類． コマンドか本質を受付
@@ -397,6 +397,22 @@ public class DiffFormatter implements AutoCloseable {
 
 		if (query != null) {
 			// System.out.println("クエリ受けとった: " + query);
+			MJQuery = query;
+			CxFlg = 1;
+		}
+	}
+
+	/**
+	 * logコマンドで指定されたコンテキストに対応するフラグを立てる
+	 *
+	 * @param query
+	 *            コンテキストの種類． コマンドか本質を受付
+	 */
+	public void setContextFlgLog(String query) {
+
+		if (query != null) {
+			// System.out.println("クエリ受けとった: " + query);
+			System.out.println("Logコマンドがクエリ受けとった: " + query);
 			MJQuery = query;
 			CxFlg = 1;
 		}
