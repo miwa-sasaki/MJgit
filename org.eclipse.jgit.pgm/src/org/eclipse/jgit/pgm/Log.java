@@ -245,6 +245,8 @@ class Log extends RevWalkTextBuiltin {
 	@Override
 	protected void show(final RevCommit c) throws Exception {
 		outw.print(CLIText.get().commitLabel);
+		// 各コミットログのコミットNo.
+		// やからこれより上でコミットログを取得してる？
 		outw.print(" "); //$NON-NLS-1$
 		c.getId().copyTo(outbuffer, outw);
 		if (decorate) {
