@@ -411,7 +411,6 @@ public class DiffFormatter implements AutoCloseable {
 	public void setContextFlgLog(String query) {
 
 		if (query != null) {
-			// System.out.println("クエリ受けとった: " + query);
 			System.out.println("Logコマンドがクエリ受けとった: " + query);
 			MJQuery = query;
 			CxFlg = 1;
@@ -633,7 +632,7 @@ public class DiffFormatter implements AutoCloseable {
 		} else if (renameDetector != null)
 			files = detectRenames(files);
 
-		//System.out.println("files is" + files); //$NON-NLS-1$
+		System.out.println("files is" + files); //$NON-NLS-1$
 		// filesは変化があったファイル達
 		return files;
 	}
@@ -778,12 +777,12 @@ public class DiffFormatter implements AutoCloseable {
 			// ここでfilesがjavaかどうかを一つ一つ確認する
 			//if (CxFlg != -1 && ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
 			if (ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
-				//System.out.println("Yes java"); //$NON-NLS-1$
+				System.out.println("Yes java"); //$NON-NLS-1$
 				isJavaFile = 1;
 				numJavaFile++;
 				//System.out.println("numJavaFile is" + numJavaFile); //$NON-NLS-1$
 			} else {
-				//System.out.println("Not java"); //$NON-NLS-1$
+				System.out.println("Not java"); //$NON-NLS-1$
 				isJavaFile = 0;
 				numOtherFile++;
 				//System.out.println("numOtherFile is" + numOtherFile); //$NON-NLS-1$
@@ -1131,7 +1130,7 @@ public class DiffFormatter implements AutoCloseable {
 				// -1はオプションなし．普通にdiff実行やから拡張処理とばす
 				if (CxFlg == 1 && isJavaFile == 1) {
 
-					// System.out.println("cx オプション！！"); //$NON-NLS-1$
+					System.out.println("cx オプション！！"); //$NON-NLS-1$
 
 					// RawTextを外部に書き出す
 					String aRawS = new String(aRaw);

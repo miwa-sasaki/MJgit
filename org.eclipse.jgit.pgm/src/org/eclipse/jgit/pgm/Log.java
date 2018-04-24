@@ -179,7 +179,8 @@ class Log extends RevWalkTextBuiltin {
 	// END -- Options shared with Diff
 
 	// 改変オプションcontext
-	@Option(name = "-cx", aliases = "--context", metaVar = "コンテキスト", usage = "指定されたコンテキストを表示")
+	// usageなんてしたらいいかわからん
+	@Option(name = "-cx", aliases = "--context", usage = "usage_noPrefix")
 	void Context(String query) {
 		diffFmt.setContextFlgLog(query);
 	}
