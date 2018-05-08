@@ -1077,6 +1077,8 @@ public class DiffFormatter implements AutoCloseable {
 		return createFormatResult(ent).header;
 	}
 
+	// miwa
+	// publicに
 	private static class FormatResult {
 		FileHeader header;
 
@@ -1085,8 +1087,17 @@ public class DiffFormatter implements AutoCloseable {
 		RawText b;
 	}
 
-	private FormatResult createFormatResult(DiffEntry ent) throws IOException,
-	CorruptObjectException, MissingObjectException {
+	/**
+	 * miwa
+	 *
+	 * @param ent
+	 * @return x
+	 * @throws IOException
+	 * @throws CorruptObjectException
+	 * @throws MissingObjectException
+	 */
+	public FormatResult createFormatResult(DiffEntry ent)
+			throws IOException, CorruptObjectException, MissingObjectException {
 		final FormatResult res = new FormatResult();
 		ByteArrayOutputStream buf = new ByteArrayOutputStream();
 		final EditList editList;
@@ -1159,14 +1170,16 @@ public class DiffFormatter implements AutoCloseable {
 					if (aSyntaxFlg && bSyntaxFlg) {
 						// System.out.println("構文エラーなし"); //$NON-NLS-1$
 
-					// aRawをaRaw_exp(分析結果)に書き換え
-					aRawS = fileToString(new File(filePlace + "aRaw_exp.java")); //$NON-NLS-1$
-					aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
+						// aRawをaRaw_exp(分析結果)に書き換え
+						aRawS = fileToString(
+								new File(filePlace + "aRaw_exp.java")); //$NON-NLS-1$
+						aRaw = aRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
-					// bRawをbRaw_exp(分析結果)に書き換え
-					bRawS = fileToString(new File(filePlace + "bRaw_exp.java")); //$NON-NLS-1$
-					bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
-					//
+						// bRawをbRaw_exp(分析結果)に書き換え
+						bRawS = fileToString(
+								new File(filePlace + "bRaw_exp.java")); //$NON-NLS-1$
+						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
+						//
 					} else {
 						// System.out.println("構文エラーあり"); //$NON-NLS-1$
 					}

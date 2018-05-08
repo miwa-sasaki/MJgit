@@ -245,6 +245,28 @@ class Log extends RevWalkTextBuiltin {
 
 	@Override
 	protected void show(final RevCommit c) throws Exception {
+		// e.g.,) git log -query method=main
+
+		// -queryが指定されているかどうか
+		if (isQuerySpecified()) {
+			// revで変更された全てのファイルについて調べる
+			for (File file : c.getFiles()) {
+				// diff計算のためのentを作る
+				// entはこのrevで変更されたfileとrev-1のfileのペア
+				DiffEntry ent = new DiffEntry(file,
+						c.getParent().getFiles(file));
+
+				// diff計算してqueryに該当するlogかどうか (method=mainが変更されているか)
+				// DiffFormatter.createFormatResult(DiffEntry ent)を呼び出したい
+				FormatResult result = diffFmt.createFormatResult(ent);
+				// resultを処理
+				if (!isQueryMatched()) {
+					// show nothing
+					return;
+				}
+
+			}
+		}
 		outw.print(CLIText.get().commitLabel);
 		// 各コミットログのコミットNo.
 		// やからこれより上でコミットログを取得してる？
@@ -284,6 +306,7 @@ class Log extends RevWalkTextBuiltin {
 
 		if (c.getParentCount() <= 1 && (showNameAndStatusOnly || showPatch))
 			showDiff(c);
+
 		outw.flush();
 	}
 
