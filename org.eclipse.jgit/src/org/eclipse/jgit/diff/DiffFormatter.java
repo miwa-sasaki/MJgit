@@ -1214,6 +1214,7 @@ public class DiffFormatter implements AutoCloseable {
 	 * @param inputFilename
 	 * @param outputFilename
 	 * @param query
+	 * @return 分析できたかどうか
 	 */
 	public boolean exec(String inputFilename, String outputFilename,
 			String query) {
@@ -1481,6 +1482,9 @@ public class DiffFormatter implements AutoCloseable {
 			e.printStackTrace();
 		}
 	}
+
+	// --------------log用-------------------
+
 
 	// --------------------------------------------
 

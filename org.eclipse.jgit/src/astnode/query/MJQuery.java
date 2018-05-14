@@ -33,16 +33,14 @@ public class MJQuery {
 	}
 
 	/**
-	 * queryの例
-	 * -cx method.name=main&method.type=int
-	 *     -> {method: [{name: main, type: int}]}
-	 *     (↑simple)
+	 * queryの例 -cx method.name=main&method.type=int -> {method: [{name: main,
+	 * type: int}]} (↑simpleクエリ)
 	 *
-	 * -cx method.name=main&method.type=int&method.name=xxx
-	 * -cx xxx=comment　--> context=COMMENT?
+	 * -cx method.name=main&method.type=int&method.name=xxx -cx xxx=comment -->
+	 * context=COMMENT?
 	 *
-	 * -cxjson {method: [{name: main, type: int}]}
-	 * -cxjson {method: [{name: main}, {type: int}]}
+	 * jsonは未実装 -cxjson {method: [{name: main, type: int}]} -cxjson {method:
+	 * [{name: main}, {type: int}]}
 	 *
 	 * @param query
 	 * @param type

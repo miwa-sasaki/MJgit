@@ -75,6 +75,11 @@ import org.eclipse.jgit.util.GitDateFormatter;
 import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.kohsuke.args4j.Option;
 
+import org.eclipse.jgit.diff.CommentVisitor;
+import org.eclipse.jgit.diff.Visitor;
+import astnode.query.MJQuery;
+import astnode.query.Context;
+
 @Command(common = true, usage = "usage_viewCommitHistory")
 class Log extends RevWalkTextBuiltin {
 
@@ -86,6 +91,8 @@ class Log extends RevWalkTextBuiltin {
 	private Map<AnyObjectId, Set<Ref>> allRefsByPeeledObjectId;
 
 	private Map<String, NoteMap> noteMaps;
+
+	boolean isQuerySpecified = false;
 
 	@Option(name="--decorate", usage="usage_showRefNamesMatchingCommits")
 	private boolean decorate;
@@ -183,6 +190,7 @@ class Log extends RevWalkTextBuiltin {
 	@Option(name = "-cx", aliases = "--context", usage = "usage_noPrefix")
 	void Context(String query) {
 		diffFmt.setContextFlgLog(query);
+		isQuerySpecified = true;
 	}
 
 
@@ -245,16 +253,15 @@ class Log extends RevWalkTextBuiltin {
 
 	@Override
 	protected void show(final RevCommit c) throws Exception {
-		// e.g.,) git log -query method=main
+		// e.g.,) mjgit log -query method=main
 
 		// -queryが指定されているかどうか
-		if (isQuerySpecified()) {
+		if (isQuerySpecified) {
 			// revで変更された全てのファイルについて調べる
 			for (File file : c.getFiles()) {
 				// diff計算のためのentを作る
 				// entはこのrevで変更されたfileとrev-1のfileのペア
-				DiffEntry ent = new DiffEntry(file,
-						c.getParent().getFiles(file));
+				DiffEntry ent = new DiffEntry(file, c.getParent().getFiles(file));
 
 				// diff計算してqueryに該当するlogかどうか (method=mainが変更されているか)
 				// DiffFormatter.createFormatResult(DiffEntry ent)を呼び出したい
