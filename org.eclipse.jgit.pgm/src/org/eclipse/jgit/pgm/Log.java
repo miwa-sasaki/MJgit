@@ -76,6 +76,7 @@ import org.eclipse.jgit.util.GitDateFormatter.Format;
 import org.kohsuke.args4j.Option;
 
 import org.eclipse.jgit.diff.CommentVisitor;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.Visitor;
 import astnode.query.MJQuery;
 import astnode.query.Context;
@@ -258,10 +259,15 @@ class Log extends RevWalkTextBuiltin {
 		// -queryが指定されているかどうか
 		if (isQuerySpecified) {
 			// revで変更された全てのファイルについて調べる
+
+			// diffFmtではtreeをscanすることでentを作成してる，同じ方法でできる？？
+			// scanで一気にできたらforいらない？
+
 			for (File file : c.getFiles()) {
 				// diff計算のためのentを作る
 				// entはこのrevで変更されたfileとrev-1のfileのペア
-				DiffEntry ent = new DiffEntry(file, c.getParent().getFiles(file));
+				DiffEntry ent = new DiffEntry(file,
+						c.getParent(0).getFiles(file));
 
 				// diff計算してqueryに該当するlogかどうか (method=mainが変更されているか)
 				// DiffFormatter.createFormatResult(DiffEntry ent)を呼び出したい

@@ -225,6 +225,7 @@ class Diff extends TextBuiltin {
 				 * //$NON-NLS-1$ //$NON-NLS-2$ + newTree);
 				 */
 
+				// 二つのtreeの間のdiffをとる
 				diffFmt.format(oldTree, newTree);
 				diffFmt.flush();
 			}
