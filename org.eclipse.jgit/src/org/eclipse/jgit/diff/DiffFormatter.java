@@ -73,6 +73,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -184,6 +185,10 @@ public class DiffFormatter implements AutoCloseable {
 	// コンテキストの種類を覚えておくフラグ．
 	// 1:コンテキスト指定あり,-1:なし
 	private int CxFlg = -1;
+
+	// Logコマンドでコンテキストを指定された時
+	// 1:コンテキスト指定あり,-1:なし
+	private int CxFlgLog = -1;
 
 	// ファイルの種類をjavaかどうか判断するフラグ
 	// 0:違う, 1:javaファイル
@@ -414,6 +419,8 @@ public class DiffFormatter implements AutoCloseable {
 			System.out.println("Logコマンドがクエリ受けとった: " + query);
 			MJQuery = query;
 			CxFlg = 1;
+			CxFlgLog = 1;
+
 		}
 	}
 
@@ -632,7 +639,7 @@ public class DiffFormatter implements AutoCloseable {
 		} else if (renameDetector != null)
 			files = detectRenames(files);
 
-		System.out.println("files is" + files); //$NON-NLS-1$
+		// System.out.println("files is" + files); //$NON-NLS-1$
 		// filesは変化があったファイル達
 		return files;
 	}
@@ -734,6 +741,32 @@ public class DiffFormatter implements AutoCloseable {
 	}
 
 	/**
+	 * formatをLogコマンド実行時に構文情報を指定された時ように改変したもの.
+	 * Log.javaにこのlogを出力するかどうかを返す.
+	 *
+	 * Format the differences between two trees.
+	 *
+	 * The patch is expressed as instructions to modify {@code a} to make it
+	 * {@code b}.
+	 *
+	 * <p>
+	 * Either side may be null to indicate that the tree has beed added or
+	 * removed. The diff will be computed against nothing.
+	 *
+	 * @param a
+	 *            the old (or previous) side or null
+	 * @param b
+	 *            the new (or updated) side or null
+	 * @return log出力するかの判定
+	 * @throws IOException
+	 *             trees cannot be read, file contents cannot be read, or the
+	 *             patch cannot be output.
+	 */
+	public boolean formatLog(RevTree a, RevTree b) throws IOException {
+		return formatLog(scan(a, b));
+	}
+
+	/**
 	 * Format the differences between two trees.
 	 *
 	 * The patch is expressed as instructions to modify {@code a} to make it
@@ -777,12 +810,12 @@ public class DiffFormatter implements AutoCloseable {
 			// ここでfilesがjavaかどうかを一つ一つ確認する
 			//if (CxFlg != -1 && ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
 			if (ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
-				System.out.println("Yes java"); //$NON-NLS-1$
+				System.out.println("Yes java: " + ent.oldPath); //$NON-NLS-1$
 				isJavaFile = 1;
 				numJavaFile++;
 				//System.out.println("numJavaFile is" + numJavaFile); //$NON-NLS-1$
 			} else {
-				System.out.println("Not java"); //$NON-NLS-1$
+				System.out.println("Not java: " + ent.oldPath); //$NON-NLS-1$
 				isJavaFile = 0;
 				numOtherFile++;
 				//System.out.println("numOtherFile is" + numOtherFile); //$NON-NLS-1$
@@ -793,6 +826,57 @@ public class DiffFormatter implements AutoCloseable {
 		//System.out.println("final numJavaFile is" + numJavaFile); //$NON-NLS-1$
 		//System.out.println("final numOtherFile is" + numOtherFile); //$NON-NLS-1$
 
+	}
+
+	/**
+	 * Format a patch script from a list of difference entries. Requires
+	 * {@link #scan(AbstractTreeIterator, AbstractTreeIterator)} to have been
+	 * called first.
+	 *
+	 * @param entries
+	 *            entries describing the affected files.
+	 * @return result: log出力するかの判定
+	 * @throws IOException
+	 *             a file's content cannot be read, or the output stream cannot
+	 *             be written to.
+	 */
+	public boolean formatLog(List<? extends DiffEntry> entries)
+			throws IOException {
+		boolean reslut = false;
+		for (DiffEntry ent : entries) {
+			// 変更があったファイル一つ一つについてformat()していくので，ここでファイルをふるいにかけられる
+			// Logでcx指定された時だけ発動
+			// 指定されたクエリに対応するファイルが一つでも変更されてたらLog出力＝trueを返す
+
+			// System.out.println(ent.oldPath);
+
+			// ここでfilesがjavaかどうかを一つ一つ確認する
+			if (ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
+				System.out.println("Yes java"); //$NON-NLS-1$
+				isJavaFile = 1;
+				numJavaFile++;
+			} else {
+				System.out.println("Not java"); //$NON-NLS-1$
+				isJavaFile = 0;
+				numOtherFile++;
+				// javaじゃない時は解析もしないし，中身の出力もしないからこれ以上やることないので次のformatに飛ばさない．
+				break;
+			}
+			// 各ファイルの解析開始
+			reslut = reslut || formatLog(ent);
+
+			// 一個でもヒットしたらこれ以上見ない（AST構築せんで済むようになる）
+			if (reslut) {
+				System.out.println("break!!!!!!!!!!!!"); //$NON-NLS-1$
+				break;
+			}
+		}
+
+		// System.out.println("final numJavaFile is" + numJavaFile);
+		// //$NON-NLS-1$
+		// System.out.println("final numOtherFile is" + numOtherFile);
+		// //$NON-NLS-1$
+		return reslut;
 	}
 
 	/**
@@ -816,6 +900,37 @@ public class DiffFormatter implements AutoCloseable {
 		// res.b.writeLine(out, );
 
 		format(res.header, res.a, res.b);
+	}
+
+	/**
+	 * Format a patch script for one file entry.
+	 *
+	 * @param ent
+	 *            the entry to be formatted.
+	 * @return log出力するかどうか
+	 * @throws IOException
+	 *             a file's content cannot be read, or the output stream cannot
+	 *             be written to.
+	 */
+	public boolean formatLog(DiffEntry ent) throws IOException {
+
+		// System.out.println("ent is " + ent); //$NON-NLS-1$
+
+		// このあと改変部分に入る
+		FormatResult res = createFormatResult(ent);
+		// System.out.println("res is " + res + "\nres.header is " +
+		// res.header); //$NON-NLS-1$ //$NON-NLS-2$
+		// System.out.println("\nres.a is " + res.a + "\nres.b is " +
+		// res.b);//$NON-NLS-1$ //$NON-NLS-2$
+
+		// res.a.writeLine(out, );
+		// res.b.writeLine(out, );
+
+		format(res.header, res.a, res.b);
+		System.out.println(
+				"@DiffFmt: res.isSpecifiedQueryChanged = " //$NON-NLS-1$
+						+ res.isSpecifiedQueryChanged);
+		return res.isSpecifiedQueryChanged;
 	}
 
 	private static byte[] writeGitLinkText(AbbreviatedObjectId id) {
@@ -935,7 +1050,6 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	protected void writeContextLine(final RawText text, final int line)
 			throws IOException {
-		//System.out.println("text is " + text); //$NON-NLS-1$
 		writeLine(' ', text, line);
 	}
 
@@ -1085,6 +1199,8 @@ public class DiffFormatter implements AutoCloseable {
 		RawText a;
 
 		RawText b;
+
+		boolean isSpecifiedQueryChanged;
 	}
 
 	/**
@@ -1139,9 +1255,10 @@ public class DiffFormatter implements AutoCloseable {
 
 				//cxオプションの有無
 				// -1はオプションなし．普通にdiff実行やから拡張処理とばす
+				// javaファイルしかみーひんで
 				if (CxFlg == 1 && isJavaFile == 1) {
-
 					System.out.println("cx オプション！！"); //$NON-NLS-1$
+
 
 					// RawTextを外部に書き出す
 					String aRawS = new String(aRaw);
@@ -1159,12 +1276,14 @@ public class DiffFormatter implements AutoCloseable {
 							filePlace + "bRaw_exp.java",
 							MJQuery);
 
-					// System.out.println("aSyntaxFlg is " + aSyntaxFlg);
-					// //$NON-NLS-1$
-					// System.out.println("bSyntaxFlg is " + bSyntaxFlg);
-					// //$NON-NLS-1$
-
-					// TODO: 両方のファイルの構文エラーチェック
+					if (CxFlgLog == 1) {
+						// Logでcx指定された時は，ファイルの中身は出力しない．
+						System.out.println("Logの cx オプション！！"); //$NON-NLS-1$
+						// 解析結果が変更されているか（指定されたクエリが変更されたか）を確認
+						res.isSpecifiedQueryChanged = fileCompare(
+								filePlace + "aRaw_exp.java",
+								filePlace + "bRaw_exp.java");
+					}
 
 					// 構文エラーあった？
 					if (aSyntaxFlg && bSyntaxFlg) {
@@ -1183,8 +1302,11 @@ public class DiffFormatter implements AutoCloseable {
 					} else {
 						// System.out.println("構文エラーあり"); //$NON-NLS-1$
 					}
-				}
 
+//					// TODO:testやで
+//					System.out.println("res.全部trueにしたいいいいい"); //$NON-NLS-1$
+//					res.isSpecifiedQueryChanged = true;
+				}
 				// ////ここから元ソース////////
 
 				res.a = new RawText(aRaw);
@@ -1210,6 +1332,28 @@ public class DiffFormatter implements AutoCloseable {
 		return res;
 	}
 
+	/**
+	 * @param fileA
+	 * @param fileB
+	 * @return 二つのファイルが同じ=true
+	 */
+	public boolean fileCompare(String fileA, String fileB) {
+		boolean bRet = false;
+		try {
+			if (new File(fileA).length() != new File(fileA).length()) {
+				return bRet;
+			}
+			byte[] byteA = Files.readAllBytes(Paths.get(fileA));
+			byte[] byteB = Files.readAllBytes(Paths.get(fileB));
+			bRet = Arrays.equals(byteA, byteB);
+			if (!bRet) {
+				System.out.println(new String(byteA, "UTF-8"));
+				System.out.println(new String(byteB, "UTF-8"));
+			}
+		} catch (IOException e) {
+		}
+		return bRet;
+	}
 	/**
 	 * @param inputFilename
 	 * @param outputFilename

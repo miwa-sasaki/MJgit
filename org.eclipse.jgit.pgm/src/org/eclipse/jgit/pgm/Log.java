@@ -186,7 +186,7 @@ class Log extends RevWalkTextBuiltin {
 
 	// END -- Options shared with Diff
 
-	// 改変オプションcontext
+	// 改変オプションcx
 	// usageなんてしたらいいかわからん
 	@Option(name = "-cx", aliases = "--context", usage = "usage_noPrefix")
 	void Context(String query) {
@@ -259,26 +259,29 @@ class Log extends RevWalkTextBuiltin {
 		// -queryが指定されているかどうか
 		if (isQuerySpecified) {
 			// revで変更された全てのファイルについて調べる
+			// クエリで指定された構文が各コミットで変更されているか調べる
+			boolean isQueryMatched = showSpecifiedLog(c);
 
-			// diffFmtではtreeをscanすることでentを作成してる，同じ方法でできる？？
-			// scanで一気にできたらforいらない？
+			// // diffFmtではtreeをscanすることでentを作成してる，同じ方法でできる？？
+			// // scanで一気にできたらforいらない？
+			//
+			// for (File file : c.getFiles()) {
+			// // diff計算のためのentを作る
+			// // entはこのrevで変更されたfileとrev-1のfileのペア
+			// DiffEntry ent = new DiffEntry(file,
+			// c.getParent(0).getFiles(file));
+			//
+			// // diff計算してqueryに該当するlogかどうか (method=mainが変更されているか)
+			// // DiffFormatter.createFormatResult(DiffEntry ent)を呼び出したい
+			// FormatResult result = diffFmt.createFormatResult(ent);
+			// // resultを処理
 
-			for (File file : c.getFiles()) {
-				// diff計算のためのentを作る
-				// entはこのrevで変更されたfileとrev-1のfileのペア
-				DiffEntry ent = new DiffEntry(file,
-						c.getParent(0).getFiles(file));
-
-				// diff計算してqueryに該当するlogかどうか (method=mainが変更されているか)
-				// DiffFormatter.createFormatResult(DiffEntry ent)を呼び出したい
-				FormatResult result = diffFmt.createFormatResult(ent);
-				// resultを処理
-				if (!isQueryMatched()) {
-					// show nothing
-					return;
-				}
-
+			if (!isQueryMatched) {
+				// show nothing
+				return;
 			}
+			//
+			// }
 		}
 		outw.print(CLIText.get().commitLabel);
 		// 各コミットログのコミットNo.
@@ -321,6 +324,28 @@ class Log extends RevWalkTextBuiltin {
 			showDiff(c);
 
 		outw.flush();
+	}
+
+	/**
+	 * Log実行時に構文情報が指定された時だけ呼び出される showDiffの改変
+	 *
+	 * @param c
+	 * @return 与えられた二つのツリー（commit）間で指定されたコンテキストの変更があるかどうか
+	 * @throws IOException
+	 */
+
+	private boolean showSpecifiedLog(RevCommit c) throws IOException {
+		final RevTree a = c.getParentCount() > 0 ? c.getParent(0).getTree()
+				: null;
+		final RevTree b = c.getTree();
+
+		outw.flush();
+		// DiffFormatterのformatをLog専用に作った
+		boolean result = diffFmt.formatLog(a, b);
+		diffFmt.flush();
+		outw.println();
+		System.out.println("@Log.java: result = " + result); //$NON-NLS-1$
+		return result;
 	}
 
 	/**
@@ -399,6 +424,8 @@ class Log extends RevWalkTextBuiltin {
 			Diff.nameStatus(outw, diffFmt.scan(a, b));
 		else {
 			outw.flush();
+			// TODO: -pかつ-cxの時もクエリ指定できるようになる．．．？まだしてない．
+			// diffFmt.formatLog(a, b);
 			diffFmt.format(a, b);
 			diffFmt.flush();
 		}
