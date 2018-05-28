@@ -417,7 +417,7 @@ public class DiffFormatter implements AutoCloseable {
 	public void setContextFlgLog(String query) {
 
 		if (query != null) {
-			System.out.println("Loggggコマンドがクエリ受けとった: " + query);
+			// System.out.println("Loggggコマンドがクエリ受けとった: " + query);
 			MJQuery = query;
 			CxFlg = 1;
 			CxFlgLog = 1;
@@ -871,10 +871,10 @@ public class DiffFormatter implements AutoCloseable {
 
 			// 一個でもヒットしたらこれ以上見ない（AST構築せんで済むようになる）
 			if (isSpecifiedQueryChanged) {
-				System.out.println(ent.oldPath + "が変更されてた．次のファイルみずにlog出力");
+				// System.out.println(ent.oldPath + "が変更されてた．次のファイルみずにlog出力");
 				break;
 			} else {
-				System.out.println(ent.oldPath + "は変更されてなかった．次のファイルみる");
+				// System.out.println(ent.oldPath + "は変更されてなかった．次のファイルみる");
 				continue;
 			}
 
