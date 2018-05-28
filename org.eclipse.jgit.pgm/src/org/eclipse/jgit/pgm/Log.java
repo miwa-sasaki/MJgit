@@ -261,27 +261,13 @@ class Log extends RevWalkTextBuiltin {
 			// revで変更された全てのファイルについて調べる
 			// クエリで指定された構文が各コミットで変更されているか調べる
 			boolean isQueryMatched = showSpecifiedLog(c);
-
-			// // diffFmtではtreeをscanすることでentを作成してる，同じ方法でできる？？
-			// // scanで一気にできたらforいらない？
-			//
-			// for (File file : c.getFiles()) {
-			// // diff計算のためのentを作る
-			// // entはこのrevで変更されたfileとrev-1のfileのペア
-			// DiffEntry ent = new DiffEntry(file,
-			// c.getParent(0).getFiles(file));
-			//
-			// // diff計算してqueryに該当するlogかどうか (method=mainが変更されているか)
-			// // DiffFormatter.createFormatResult(DiffEntry ent)を呼び出したい
-			// FormatResult result = diffFmt.createFormatResult(ent);
-			// // resultを処理
+			// System.out.println("@Log.show: result = " + isQueryMatched);
 
 			if (!isQueryMatched) {
 				// show nothing
+				// System.out.println("logを出力から消した");
 				return;
 			}
-			//
-			// }
 		}
 		outw.print(CLIText.get().commitLabel);
 		// 各コミットログのコミットNo.
@@ -340,11 +326,10 @@ class Log extends RevWalkTextBuiltin {
 		final RevTree b = c.getTree();
 
 		outw.flush();
-		// DiffFormatterのformatをLog専用に作った
+		// DiffFormatterのformatをLog専用に改変
 		boolean result = diffFmt.formatLog(a, b);
 		diffFmt.flush();
 		outw.println();
-		System.out.println("@Log.java: result = " + result); //$NON-NLS-1$
 		return result;
 	}
 

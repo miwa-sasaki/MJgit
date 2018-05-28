@@ -63,6 +63,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 //import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -416,7 +417,7 @@ public class DiffFormatter implements AutoCloseable {
 	public void setContextFlgLog(String query) {
 
 		if (query != null) {
-			System.out.println("Logコマンドがクエリ受けとった: " + query);
+			System.out.println("Loggggコマンドがクエリ受けとった: " + query);
 			MJQuery = query;
 			CxFlg = 1;
 			CxFlgLog = 1;
@@ -741,8 +742,7 @@ public class DiffFormatter implements AutoCloseable {
 	}
 
 	/**
-	 * formatをLogコマンド実行時に構文情報を指定された時ように改変したもの.
-	 * Log.javaにこのlogを出力するかどうかを返す.
+	 * formatをLogコマンド実行時に構文情報を指定された時ように改変したもの. Log.javaにこのlogを出力するかどうかを返す.
 	 *
 	 * Format the differences between two trees.
 	 *
@@ -757,7 +757,7 @@ public class DiffFormatter implements AutoCloseable {
 	 *            the old (or previous) side or null
 	 * @param b
 	 *            the new (or updated) side or null
-	 * @return log出力するかの判定
+	 * @return log出力するかの判定 trueなら出力する
 	 * @throws IOException
 	 *             trees cannot be read, file contents cannot be read, or the
 	 *             patch cannot be output.
@@ -810,15 +810,17 @@ public class DiffFormatter implements AutoCloseable {
 			// ここでfilesがjavaかどうかを一つ一つ確認する
 			//if (CxFlg != -1 && ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
 			if (ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
-				System.out.println("Yes java: " + ent.oldPath); //$NON-NLS-1$
+				// System.out.println("Yes java: " + ent.oldPath); //$NON-NLS-1$
 				isJavaFile = 1;
 				numJavaFile++;
 				//System.out.println("numJavaFile is" + numJavaFile); //$NON-NLS-1$
 			} else {
-				System.out.println("Not java: " + ent.oldPath); //$NON-NLS-1$
+				// System.out.println("Not java: " + ent.oldPath); //$NON-NLS-1$
 				isJavaFile = 0;
 				numOtherFile++;
 				//System.out.println("numOtherFile is" + numOtherFile); //$NON-NLS-1$
+				// 次のファイルのチェックに行く．ファイルの内容出力しない（.javaしか出力しない）
+				continue;
 			}
 			format(ent);
 		}
@@ -835,48 +837,49 @@ public class DiffFormatter implements AutoCloseable {
 	 *
 	 * @param entries
 	 *            entries describing the affected files.
-	 * @return result: log出力するかの判定
+	 * @return result: log出力するかの判定 trueなら出力する
 	 * @throws IOException
 	 *             a file's content cannot be read, or the output stream cannot
 	 *             be written to.
 	 */
 	public boolean formatLog(List<? extends DiffEntry> entries)
 			throws IOException {
-		boolean reslut = false;
+		// 指定クエリが変更されたかどうか
+		boolean isSpecifiedQueryChanged = false;
 		for (DiffEntry ent : entries) {
 			// 変更があったファイル一つ一つについてformat()していくので，ここでファイルをふるいにかけられる
 			// Logでcx指定された時だけ発動
 			// 指定されたクエリに対応するファイルが一つでも変更されてたらLog出力＝trueを返す
 
-			// System.out.println(ent.oldPath);
-
 			// ここでfilesがjavaかどうかを一つ一つ確認する
 			if (ent.oldPath.endsWith(".java")) { //$NON-NLS-1$
-				System.out.println("Yes java"); //$NON-NLS-1$
+				// System.out.println("Yes java" + ent.oldPath); //$NON-NLS-1$
 				isJavaFile = 1;
 				numJavaFile++;
 			} else {
-				System.out.println("Not java"); //$NON-NLS-1$
+				// System.out.println("Not java" + ent.oldPath); //$NON-NLS-1$
 				isJavaFile = 0;
 				numOtherFile++;
-				// javaじゃない時は解析もしないし，中身の出力もしないからこれ以上やることないので次のformatに飛ばさない．
-				break;
+				// 次のファイルのチェックに行く．
+				// ファイルの内容出力しない（.javaしか出力しない）
+				// AST解析もしない
+				continue;
 			}
 			// 各ファイルの解析開始
-			reslut = reslut || formatLog(ent);
+			// trueが返って来たら変更あったってこと
+			isSpecifiedQueryChanged = formatLog(ent);
 
 			// 一個でもヒットしたらこれ以上見ない（AST構築せんで済むようになる）
-			if (reslut) {
-				System.out.println("break!!!!!!!!!!!!"); //$NON-NLS-1$
+			if (isSpecifiedQueryChanged) {
+				System.out.println(ent.oldPath + "が変更されてた．次のファイルみずにlog出力");
 				break;
+			} else {
+				System.out.println(ent.oldPath + "は変更されてなかった．次のファイルみる");
+				continue;
 			}
-		}
 
-		// System.out.println("final numJavaFile is" + numJavaFile);
-		// //$NON-NLS-1$
-		// System.out.println("final numOtherFile is" + numOtherFile);
-		// //$NON-NLS-1$
-		return reslut;
+		}
+		return isSpecifiedQueryChanged;
 	}
 
 	/**
@@ -907,7 +910,7 @@ public class DiffFormatter implements AutoCloseable {
 	 *
 	 * @param ent
 	 *            the entry to be formatted.
-	 * @return log出力するかどうか
+	 * @return 指定されたクエリが変更されたかどうか．変更されたらtrue
 	 * @throws IOException
 	 *             a file's content cannot be read, or the output stream cannot
 	 *             be written to.
@@ -916,20 +919,17 @@ public class DiffFormatter implements AutoCloseable {
 
 		// System.out.println("ent is " + ent); //$NON-NLS-1$
 
-		// このあと改変部分に入る
+		// これで解析部分に入る
 		FormatResult res = createFormatResult(ent);
-		// System.out.println("res is " + res + "\nres.header is " +
-		// res.header); //$NON-NLS-1$ //$NON-NLS-2$
-		// System.out.println("\nres.a is " + res.a + "\nres.b is " +
-		// res.b);//$NON-NLS-1$ //$NON-NLS-2$
 
-		// res.a.writeLine(out, );
-		// res.b.writeLine(out, );
+		// ここ消したらファイルの中身の出力なくなる
+		// format(res.header, res.a, res.b);
 
-		format(res.header, res.a, res.b);
-		System.out.println(
-				"@DiffFmt: res.isSpecifiedQueryChanged = " //$NON-NLS-1$
-						+ res.isSpecifiedQueryChanged);
+		// System.out.println(
+		// "@DiffFmt: res.isSpecifiedQueryChanged = " //$NON-NLS-1$
+		// + res.isSpecifiedQueryChanged);
+
+		// isSpecifiedQueryChanged: trueで変更してる
 		return res.isSpecifiedQueryChanged;
 	}
 
@@ -1257,8 +1257,7 @@ public class DiffFormatter implements AutoCloseable {
 				// -1はオプションなし．普通にdiff実行やから拡張処理とばす
 				// javaファイルしかみーひんで
 				if (CxFlg == 1 && isJavaFile == 1) {
-					System.out.println("cx オプション！！"); //$NON-NLS-1$
-
+					// System.out.println("cx オプション！！"); //$NON-NLS-1$
 
 					// RawTextを外部に書き出す
 					String aRawS = new String(aRaw);
@@ -1278,14 +1277,17 @@ public class DiffFormatter implements AutoCloseable {
 
 					if (CxFlgLog == 1) {
 						// Logでcx指定された時は，ファイルの中身は出力しない．
-						System.out.println("Logの cx オプション！！"); //$NON-NLS-1$
+						// System.out.println("Logの cx オプション！！"); //$NON-NLS-1$
 						// 解析結果が変更されているか（指定されたクエリが変更されたか）を確認
 						res.isSpecifiedQueryChanged = fileCompare(
 								filePlace + "aRaw_exp.java",
 								filePlace + "bRaw_exp.java");
+						// System.out.println("res.isSpecifiedQueryChanged: "
+						// //$NON-NLS-1$
+						// + res.isSpecifiedQueryChanged);
 					}
 
-					// 構文エラーあった？
+					// 構文エラーチェック
 					if (aSyntaxFlg && bSyntaxFlg) {
 						// System.out.println("構文エラーなし"); //$NON-NLS-1$
 
@@ -1298,14 +1300,19 @@ public class DiffFormatter implements AutoCloseable {
 						bRawS = fileToString(
 								new File(filePlace + "bRaw_exp.java")); //$NON-NLS-1$
 						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
-						//
+
 					} else {
 						// System.out.println("構文エラーあり"); //$NON-NLS-1$
 					}
 
-//					// TODO:testやで
-//					System.out.println("res.全部trueにしたいいいいい"); //$NON-NLS-1$
-//					res.isSpecifiedQueryChanged = true;
+					if (CxFlgLog == 1) {
+						// Logの時はファイル内容出力しないからこの先の処理いらない．returnする
+						return res;
+					}
+
+					// // TODO:testやで
+					// System.out.println("res.全部trueにしたいいいいい"); //$NON-NLS-1$
+					// res.isSpecifiedQueryChanged = true;
 				}
 				// ////ここから元ソース////////
 
@@ -1334,25 +1341,73 @@ public class DiffFormatter implements AutoCloseable {
 
 	/**
 	 * @param fileA
+	 *            ファイル名
 	 * @param fileB
-	 * @return 二つのファイルが同じ=true
+	 *            ファイル名
+	 * @return ファイルが変更されている = true
+	 *
+	 *         fileAとfileBの中身を1行ずつ見ていき比較する． ただし，改行と空白は無視する．
 	 */
-	public boolean fileCompare(String fileA, String fileB) {
-		boolean bRet = false;
-		try {
-			if (new File(fileA).length() != new File(fileA).length()) {
-				return bRet;
+	public static boolean fileCompare(String fileA, String fileB) {
+		boolean isSpecifiedQueryChanged = false;
+		String lineA;
+		String lineB;
+
+		try (BufferedReader inA = new BufferedReader(
+				new FileReader(new File(fileA)))) {
+			try (BufferedReader inB = new BufferedReader(
+					new FileReader(new File(fileB)))) {
+
+				// A,B両方1行進めるループ
+				while ((lineA = inA.readLine()) != null
+						&& (lineB = inB.readLine()) != null) {
+
+					// Aだけを進めるループ
+					while (lineA != null) {
+						// 空白，タブ，改行を除外
+						lineA = lineA.replaceAll(" ", "");
+						lineA = lineA.replaceAll("\t", "");
+						if (lineA.length() == 0) {
+							// 除外される行やから次の行へ
+							lineA = inA.readLine();
+							continue;
+						}
+						// System.out.println("lineA:" + lineA);
+						// 比較するべき行にきたからBのループへ移動
+						break;
+					}
+
+					// Bだけを進めるループ
+					while (lineB != null) {
+						// 空白，タブ，改行を除外
+						lineB = lineB.replaceAll(" ", "");
+						lineB = lineB.replaceAll("\t", "");
+						if (lineB.length() == 0) {
+							// 除外される行やから次の行へ
+							lineB = inB.readLine();
+							continue;
+						}
+						// System.out.println("lineB:" + lineB);
+						// 比較するべき行にきたからAと比較
+						if (lineA != null && !lineA.equals(lineB)) {
+							// 変更があった
+							// System.out.println("変更あり");
+							return true;
+						}
+						// AとBが一致したので
+						// AもBも次の行に進める
+						break;
+					}
+				}
 			}
-			byte[] byteA = Files.readAllBytes(Paths.get(fileA));
-			byte[] byteB = Files.readAllBytes(Paths.get(fileB));
-			bRet = Arrays.equals(byteA, byteB);
-			if (!bRet) {
-				System.out.println(new String(byteA, "UTF-8"));
-				System.out.println(new String(byteB, "UTF-8"));
-			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(-1);
 		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(-1);
 		}
-		return bRet;
+		return isSpecifiedQueryChanged;
 	}
 	/**
 	 * @param inputFilename
@@ -1504,7 +1559,9 @@ public class DiffFormatter implements AutoCloseable {
 				}
 			}
 			// 最後の一個改行多いから消す
-			buffer.deleteCharAt(buffer.length() - 1);
+			if (buffer.length() >= 1) {
+				buffer.deleteCharAt(buffer.length() - 1);
+			}
 			Files.write(Paths.get(filename), String.valueOf(buffer).getBytes());
 			// System.out.println("--------------");
 			// System.out.println(buffer);
