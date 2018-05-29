@@ -1310,9 +1310,6 @@ public class DiffFormatter implements AutoCloseable {
 						return res;
 					}
 
-					// // TODO:testやで
-					// System.out.println("res.全部trueにしたいいいいい"); //$NON-NLS-1$
-					// res.isSpecifiedQueryChanged = true;
 				}
 				// ////ここから元ソース////////
 
