@@ -95,6 +95,8 @@ class Log extends RevWalkTextBuiltin {
 
 	boolean isQuerySpecified = false;
 
+	int skipLogs = 0;
+
 	@Option(name="--decorate", usage="usage_showRefNamesMatchingCommits")
 	private boolean decorate;
 
@@ -207,6 +209,7 @@ class Log extends RevWalkTextBuiltin {
 
 	@Override
 	protected void run() throws Exception {
+		// System.out.println("run!!!");
 		diffFmt.setRepository(db);
 		try {
 			diffFmt.setPathFilter(pathFilter);
@@ -241,6 +244,7 @@ class Log extends RevWalkTextBuiltin {
 		} finally {
 			diffFmt.close();
 		}
+		System.out.println("final skipLogs = " + skipLogs);
 	}
 
 	private void addNoteMap(String notesRef) throws IOException {
@@ -266,6 +270,8 @@ class Log extends RevWalkTextBuiltin {
 			if (!isQueryMatched) {
 				// show nothing
 				// System.out.println("logを出力から消した");
+				skipLogs++;
+				System.out.println("skipLogs=" + skipLogs);
 				return;
 			}
 		}
