@@ -316,7 +316,7 @@ class Log extends RevWalkTextBuiltin {
 	 * Log実行時に構文情報が指定された時だけ呼び出される showDiffの改変
 	 *
 	 * @param c
-	 * @return 与えられた二つのツリー（commit）間で指定されたコンテキストの変更があるかどうか
+	 * @return 与えられた二つのツリー（commit）間で指定されたコンテキストの変更があるかどうか.trueで変更あり
 	 * @throws IOException
 	 */
 
@@ -326,11 +326,15 @@ class Log extends RevWalkTextBuiltin {
 		final RevTree b = c.getTree();
 
 		outw.flush();
+		// System.out.println("showSpecifiedLog!!!!!");
 		// DiffFormatterのformatをLog専用に改変
-		boolean result = diffFmt.formatLog(a, b);
+		boolean isQueryMatched = diffFmt.formatLog(a, b);
 		diffFmt.flush();
-		outw.println();
-		return result;
+		if (isQueryMatched) {
+			// 無駄な改行消す
+			outw.println();
+		}
+		return isQueryMatched;
 	}
 
 	/**
@@ -401,6 +405,7 @@ class Log extends RevWalkTextBuiltin {
 	}
 
 	private void showDiff(RevCommit c) throws IOException {
+		// System.out.println("showDiffやで");
 		final RevTree a = c.getParentCount() > 0 ? c.getParent(0).getTree()
 				: null;
 		final RevTree b = c.getTree();
@@ -409,6 +414,7 @@ class Log extends RevWalkTextBuiltin {
 			Diff.nameStatus(outw, diffFmt.scan(a, b));
 		else {
 			outw.flush();
+			// System.out.println("-pやで");
 			// TODO: -pかつ-cxの時もクエリ指定できるようになる．．．？まだしてない．
 			// diffFmt.formatLog(a, b);
 			diffFmt.format(a, b);

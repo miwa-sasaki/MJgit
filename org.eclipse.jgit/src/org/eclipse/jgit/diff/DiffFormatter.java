@@ -979,6 +979,12 @@ public class DiffFormatter implements AutoCloseable {
 		// Reuse the existing FileHeader as-is by blindly copying its
 		// header lines, but avoiding its hunks. Instead we recreate
 		// the hunks from the text instances we have been supplied.
+
+		// TODO:このぬるぽ対策適当
+		// -cxと-pを同時実行するとぬるぽ起こる
+		if (head == null) {
+			return;
+		}
 		final int start = head.getStartOffset();
 		int end = head.getEndOffset();
 		if (!head.getHunks().isEmpty())
