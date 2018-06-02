@@ -330,10 +330,8 @@ class Log extends RevWalkTextBuiltin {
 		// DiffFormatterのformatをLog専用に改変
 		boolean isQueryMatched = diffFmt.formatLog(a, b);
 		diffFmt.flush();
-		if (isQueryMatched) {
-			// 無駄な改行消す
-			outw.println();
-		}
+		// logを削除した時に無駄な改行になる
+		// outw.println();
 		return isQueryMatched;
 	}
 
