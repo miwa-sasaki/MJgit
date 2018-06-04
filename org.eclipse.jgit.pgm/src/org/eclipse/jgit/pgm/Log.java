@@ -97,6 +97,8 @@ class Log extends RevWalkTextBuiltin {
 
 	int skipLogs = 0;
 
+	int showLogs = 0;
+
 	@Option(name="--decorate", usage="usage_showRefNamesMatchingCommits")
 	private boolean decorate;
 
@@ -245,6 +247,7 @@ class Log extends RevWalkTextBuiltin {
 			diffFmt.close();
 		}
 		System.out.println("final skipLogs = " + skipLogs);
+		System.out.println("final showLogs = " + showLogs);
 	}
 
 	private void addNoteMap(String notesRef) throws IOException {
@@ -274,6 +277,8 @@ class Log extends RevWalkTextBuiltin {
 				System.out.println("skipLogs=" + skipLogs);
 				return;
 			}
+			showLogs++;
+			System.out.println("showLogs=" + showLogs);
 		}
 		outw.print(CLIText.get().commitLabel);
 		// 各コミットログのコミットNo.
