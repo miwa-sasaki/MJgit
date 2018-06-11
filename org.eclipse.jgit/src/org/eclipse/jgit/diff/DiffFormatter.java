@@ -1268,10 +1268,8 @@ public class DiffFormatter implements AutoCloseable {
 					// RawTextを外部に書き出す
 					String aRawS = new String(aRaw);
 					export(filePlace + "aRaw.java", aRawS); //$NON-NLS-1$
-
 					String bRawS = new String(bRaw);
 					export(filePlace + "bRaw.java", bRawS); //$NON-NLS-1$
-
 
 					// 分析結果を外部に書きだす
 					aSyntaxFlg = exec(filePlace + "aRaw.java",
@@ -1353,8 +1351,10 @@ public class DiffFormatter implements AutoCloseable {
 	 */
 	public static boolean fileCompare(String fileA, String fileB) {
 		boolean isSpecifiedQueryChanged = false;
-		String lineA;
-		String lineB;
+		String lineA = "";
+		String lineB = "";
+		boolean isFileASpaceOnly = true;
+		boolean isFileBSpaceOnly = true;
 
 		try (BufferedReader inA = new BufferedReader(
 				new FileReader(new File(fileA)))) {
@@ -1375,6 +1375,7 @@ public class DiffFormatter implements AutoCloseable {
 							lineA = inA.readLine();
 							continue;
 						}
+						isFileASpaceOnly = false;
 						// System.out.println("lineA:" + lineA);
 						// 比較するべき行にきたからBのループへ移動
 						break;
@@ -1390,15 +1391,23 @@ public class DiffFormatter implements AutoCloseable {
 							lineB = inB.readLine();
 							continue;
 						}
+						isFileBSpaceOnly = false;
 						// System.out.println("lineB:" + lineB);
 						// 比較するべき行にきたからAと比較
-						if (lineA != null && !lineA.equals(lineB)) {
+						// Aが!nullの場合，Bと一致しなければ変更あり
+						// Aがnullの場合，変更あり(ここに来た時点でBに変更はあった)，
+						if ((lineA != null && !lineA.equals(lineB))
+								|| (isFileASpaceOnly)) {
 							// 変更があった
-							// System.out.println("変更あり");
+							System.out.println("変更あり");
 							return true;
 						}
+
+						// TODO: Bが空白でAが変更ありのときにtrueを返す
+
 						// AとBが一致したので
 						// AもBも次の行に進める
+						// System.out.println("一致した，次の行");
 						break;
 					}
 				}
@@ -1552,10 +1561,13 @@ public class DiffFormatter implements AutoCloseable {
 		try {
 			List<String> lines = Files.readAllLines(Paths.get(source));
 
+			System.out.println("---------------------------");
+			System.out.println("file name: " + filename);
 			StringBuffer buffer = new StringBuffer();
 			for (int i = 0; i < lines.size(); i++) {
 				if (set.contains(i)) {
 					buffer.append(lines.get(i) + "\n");
+					System.out.println(lines.get(i));
 					set.remove(i);
 				} else {
 					buffer.append("\n");
@@ -1566,6 +1578,7 @@ public class DiffFormatter implements AutoCloseable {
 				buffer.deleteCharAt(buffer.length() - 1);
 			}
 			Files.write(Paths.get(filename), String.valueOf(buffer).getBytes());
+			// ファイル内容出力
 			// System.out.println("--------------");
 			// System.out.println(buffer);
 		} catch (IOException e) {

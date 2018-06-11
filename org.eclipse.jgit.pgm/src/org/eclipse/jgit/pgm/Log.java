@@ -278,7 +278,7 @@ class Log extends RevWalkTextBuiltin {
 				return;
 			}
 			showLogs++;
-			System.out.println("showLogs=" + showLogs);
+			// System.out.println("showLogs=" + showLogs);
 		}
 		outw.print(CLIText.get().commitLabel);
 		// 各コミットログのコミットNo.
