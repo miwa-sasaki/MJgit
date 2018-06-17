@@ -95,6 +95,8 @@ class Log extends RevWalkTextBuiltin {
 
 	boolean isQuerySpecified = false;
 
+	boolean isCommentPrinted = false;
+
 	int skipLogs = 0;
 
 	int showLogs = 0;
@@ -198,6 +200,11 @@ class Log extends RevWalkTextBuiltin {
 		isQuerySpecified = true;
 	}
 
+	@Option(name = "-com", aliases = "--comment", usage = "usage_noPrefix")
+	void CommentPrint(boolean on) {
+		isCommentPrinted = true;
+		diffFmt.setCommentPrintFlg(isCommentPrinted);
+	}
 
 	Log() {
 		dateFormatter = new GitDateFormatter(Format.DEFAULT);
@@ -274,7 +281,8 @@ class Log extends RevWalkTextBuiltin {
 				// show nothing
 				// System.out.println("logを出力から消した");
 				skipLogs++;
-				System.out.println("skipLogs=" + skipLogs);
+				if (isCommentPrinted)
+					System.out.println("skipLogs=" + skipLogs);
 				return;
 			}
 			showLogs++;

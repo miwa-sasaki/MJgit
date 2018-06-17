@@ -220,6 +220,9 @@ public class DiffFormatter implements AutoCloseable {
 
 	String MJQuery;
 
+	static // デバッグコメントを出力するかどうか
+	boolean isCommentPrintedFlg = false;
+
 	// -----------------------------------
 
 	/**
@@ -421,7 +424,19 @@ public class DiffFormatter implements AutoCloseable {
 			MJQuery = query;
 			CxFlg = 1;
 			CxFlgLog = 1;
+		}
+	}
 
+	/**
+	 * logコマンドで指定されたコンテキストに対応するフラグを立てる
+	 *
+	 * @param flg
+	 *            コメントを出力するかどうか
+	 */
+	// TODO:デバッグおわたら消す
+	public void setCommentPrintFlg(boolean flg) {
+		if (flg) {
+			isCommentPrintedFlg = true;
 		}
 	}
 
@@ -640,7 +655,8 @@ public class DiffFormatter implements AutoCloseable {
 		} else if (renameDetector != null)
 			files = detectRenames(files);
 
-		// System.out.println("files is" + files); //$NON-NLS-1$
+		if (isCommentPrintedFlg)
+			System.out.println("files is" + files); //$NON-NLS-1$
 		// filesは変化があったファイル達
 		return files;
 	}
@@ -1272,6 +1288,7 @@ public class DiffFormatter implements AutoCloseable {
 					export(filePlace + "bRaw.java", bRawS); //$NON-NLS-1$
 
 					// 分析結果を外部に書きだす
+					// System.out.println("分析結果を外部に書き出す");
 					aSyntaxFlg = exec(filePlace + "aRaw.java",
 							filePlace + "aRaw_exp.java",
 							MJQuery);
@@ -1279,21 +1296,11 @@ public class DiffFormatter implements AutoCloseable {
 							filePlace + "bRaw_exp.java",
 							MJQuery);
 
-					if (CxFlgLog == 1) {
-						// Logでcx指定された時は，ファイルの中身は出力しない．
-						// System.out.println("Logの cx オプション！！"); //$NON-NLS-1$
-						// 解析結果が変更されているか（指定されたクエリが変更されたか）を確認
-						res.isSpecifiedQueryChanged = fileCompare(
-								filePlace + "aRaw_exp.java",
-								filePlace + "bRaw_exp.java");
-						// System.out.println("res.isSpecifiedQueryChanged: "
-						// //$NON-NLS-1$
-						// + res.isSpecifiedQueryChanged);
-					}
 
 					// 構文エラーチェック
 					if (aSyntaxFlg && bSyntaxFlg) {
-						// System.out.println("構文エラーなし"); //$NON-NLS-1$
+						if (isCommentPrintedFlg)
+							System.out.println("構文エラーなし"); //$NON-NLS-1$
 
 						// aRawをaRaw_exp(分析結果)に書き換え
 						aRawS = fileToString(
@@ -1306,10 +1313,31 @@ public class DiffFormatter implements AutoCloseable {
 						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
 					} else {
-						// System.out.println("構文エラーあり"); //$NON-NLS-1$
+						if (isCommentPrintedFlg)
+							System.out.println("構文エラーあり"); //$NON-NLS-1$
 					}
 
 					if (CxFlgLog == 1) {
+						// System.out.println("Logの cx オプション！！"); //$NON-NLS-1$
+						// Logでcx指定された時は，ファイルの中身は出力しない．
+
+						// 比較する両方のファイルに構文エラーがないか判断
+						// どちらか片方でも構文エラーがある場合，比較できないのでその注意文を出力してlogを出力する．
+						if (!(aSyntaxFlg && bSyntaxFlg)) {
+							System.out.println(
+									"vvvvvv This revision has some syntax errors. vvvvvv");
+							res.isSpecifiedQueryChanged = true;
+							return res;
+						}
+
+						// 解析結果が変更されているか（指定されたクエリが変更されたか）を確認
+						res.isSpecifiedQueryChanged = fileCompare(
+								filePlace + "aRaw_exp.java",
+								filePlace + "bRaw_exp.java");
+						// System.out.println("res.isSpecifiedQueryChanged: "
+						// //$NON-NLS-1$
+						// + res.isSpecifiedQueryChanged);
+
 						// Logの時はファイル内容出力しないからこの先の処理いらない．returnする
 						return res;
 					}
@@ -1356,6 +1384,97 @@ public class DiffFormatter implements AutoCloseable {
 		boolean isFileASpaceOnly = true;
 		boolean isFileBSpaceOnly = true;
 
+		// A, Bが空白かどうか
+		try (BufferedReader inA = new BufferedReader(
+				new FileReader(new File(fileA)))) {
+			try (BufferedReader inB = new BufferedReader(
+					new FileReader(new File(fileB)))) {
+
+				// １回目にファイル内容nullかどうか確認
+				lineA = inA.readLine();
+				lineB = inB.readLine();
+
+				if(lineA == null) {
+					lineA = "";
+				}
+				if(lineB == null) {
+					lineB = "";
+				}
+
+//				if((lineA != null && lineB == null) || (lineA == null && lineB != null)) {
+//					//片方null
+//					System.out.println("最初のチェック．片方null");
+//					return true;
+//				} else if (lineA == null && lineB == null) {
+//					//両方null
+//					System.out.println("最初のチェック，両方null");
+//					return false;
+//				}
+				// // 両方not null
+//				System.out.println("両方not null");
+
+				// A,B両方1行進めるループ
+				while (lineA != null && lineB != null) {
+
+					// Aだけを進めるループ
+					while (lineA != null) {
+						// System.out.println("lienA: " + lineA);
+						// 空白，タブ，改行を除外
+						lineA = lineA.replaceAll(" ", "");
+						lineA = lineA.replaceAll("\t", "");
+						if (lineA.length() == 0) {
+							// 除外される行やから次の行へ
+							// System.out.println("lienA: " + lineA);
+							lineA = inA.readLine();
+							continue;
+						} else {
+							isFileASpaceOnly = false;
+							break;
+						}
+					}
+					// System.out.println("Aループ終了");
+					// Bだけを進めるループ
+					while (lineB != null) {
+						// 空白，タブ，改行を除外
+						// System.out.println("lienB: " + lineB);
+						lineB = lineB.replaceAll(" ", "");
+						lineB = lineB.replaceAll("\t", "");
+						if (lineB.length() == 0) {
+							// 除外される行やから次の行へ
+							lineB = inB.readLine();
+							continue;
+						} else {
+							isFileBSpaceOnly = false;
+							break;
+						}
+					}
+					// 両方が空白only
+					if (isFileASpaceOnly && isFileBSpaceOnly) {
+						// System.out.println("両方空白");
+						return false;
+					} else if ((isFileASpaceOnly && !isFileBSpaceOnly)
+							|| (!isFileASpaceOnly && isFileBSpaceOnly)) {// 片方が空白（変更あり）
+						// System.out.println("片方が空白");
+						// System.out.println("isFileA: " + isFileASpaceOnly);
+						// System.out.println("isFileB: " + isFileBSpaceOnly);
+						return true;
+					}
+					lineA = inA.readLine();
+					lineB = inB.readLine();
+				}
+
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		// 両方が空白じゃないからちゃんと比較する
+		// System.out.println("両方not空白");
+
+		// A,Bが一致しているかどうか
 		try (BufferedReader inA = new BufferedReader(
 				new FileReader(new File(fileA)))) {
 			try (BufferedReader inB = new BufferedReader(
@@ -1375,7 +1494,7 @@ public class DiffFormatter implements AutoCloseable {
 							lineA = inA.readLine();
 							continue;
 						}
-						isFileASpaceOnly = false;
+						// isFileASpaceOnly = false;
 						// System.out.println("lineA:" + lineA);
 						// 比較するべき行にきたからBのループへ移動
 						break;
@@ -1391,25 +1510,29 @@ public class DiffFormatter implements AutoCloseable {
 							lineB = inB.readLine();
 							continue;
 						}
-						isFileBSpaceOnly = false;
+						// isFileBSpaceOnly = false;
 						// System.out.println("lineB:" + lineB);
 						// 比較するべき行にきたからAと比較
 						// Aが!nullの場合，Bと一致しなければ変更あり
-						// Aがnullの場合，変更あり(ここに来た時点でBに変更はあった)，
-						if ((lineA != null && !lineA.equals(lineB))
-								|| (isFileASpaceOnly)) {
+						// Aがnullの場合，変更あり(ここに来た時点でBに変更はあった)
+						if ((lineA != null && !lineA.equals(lineB))) {
 							// 変更があった
-							System.out.println("変更あり");
+							// if (isCommentPrintedFlg)
+							// System.out.println("変更あり");
 							return true;
 						}
-
-						// TODO: Bが空白でAが変更ありのときにtrueを返す
-
 						// AとBが一致したので
 						// AもBも次の行に進める
 						// System.out.println("一致した，次の行");
 						break;
 					}
+
+					// // Bが空白でBがnot空白
+					// if (!isFileASpaceOnly && isFileBSpaceOnly) {
+					// // System.out.println("A not空白，B 空白");
+					// return true;
+					// }
+
 				}
 			}
 		} catch (FileNotFoundException e) {
@@ -1421,14 +1544,16 @@ public class DiffFormatter implements AutoCloseable {
 		}
 		return isSpecifiedQueryChanged;
 	}
+
 	/**
 	 * @param inputFilename
 	 * @param outputFilename
 	 * @param query
 	 * @return 分析できたかどうか
+	 * @throws IOException
 	 */
 	public boolean exec(String inputFilename, String outputFilename,
-			String query) {
+			String query) throws IOException {
 		boolean ast;
 		boolean com;
 		boolean jd;
@@ -1544,7 +1669,9 @@ public class DiffFormatter implements AutoCloseable {
 			return true;
 		} else {
 			// System.out.println("構文エラー！！！");
-			fileCopy(inputFilename, outputFilename);
+			// fileCopy(inputFilename, outputFilename);
+			String s = fileToString(new File(inputFilename)); // $NON-NLS-1$
+			export(outputFilename, s); // $NON-NLS-1$
 			return false;
 		}
 	}
@@ -1560,14 +1687,20 @@ public class DiffFormatter implements AutoCloseable {
 			Set<Integer> set) {
 		try {
 			List<String> lines = Files.readAllLines(Paths.get(source));
-
-			System.out.println("---------------------------");
-			System.out.println("file name: " + filename);
+			// ファイル名出力
+			if (isCommentPrintedFlg) {
+				System.out.println("------------line set---------------");
+				System.out.println("file name: " + filename);
+				System.out.println("-------------line set--------------");
+			}
 			StringBuffer buffer = new StringBuffer();
 			for (int i = 0; i < lines.size(); i++) {
 				if (set.contains(i)) {
 					buffer.append(lines.get(i) + "\n");
-					System.out.println(lines.get(i));
+					// 解析結果出力
+					if (isCommentPrintedFlg) {
+						System.out.println(lines.get(i));
+					}
 					set.remove(i);
 				} else {
 					buffer.append("\n");
@@ -1599,6 +1732,12 @@ public class DiffFormatter implements AutoCloseable {
 		// + filename + ".java"; //$NON-NLS-1$ //$NON-NLS-2$
 		// filename = "/org.eclipse.jgit.pgm/src/files/" + filename + ".java";
 		// //$NON-NLS-1$ //$NON-NLS-2$
+
+		// body出力
+		// System.out.println("----------------------------------------");
+		// System.out.println("export smpleの出力" + filename);
+		// System.out.println(body);
+		// System.out.println("----------------------------------------");
 
 		// ファイル作成
 		File newfile = new File(filename);
@@ -1700,10 +1839,6 @@ public class DiffFormatter implements AutoCloseable {
 		}
 	}
 
-	// --------------log用-------------------
-
-
-	// --------------------------------------------
 
 	private EditList diff(RawText a, RawText b) {
 		return diffAlgorithm.diff(comparator, a, b);
