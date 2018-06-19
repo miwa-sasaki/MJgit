@@ -134,10 +134,22 @@ public class Visitor extends ASTVisitor {
 	private void addLineNumberStartEnd(MethodDeclaration node) {
 		if (node == null)
 			return;
+		// System.out.println("---------node:" + node);
+		// System.out.println("---------node.getReturnType2().getStartPosition():"
+		// + node.getReturnType2().getStartPosition());
+		// System.out.println(
+		// "---------node.getReturnType2():" + node.getReturnType2());
+		// System.out.println(
+		// "---------node.getstartPosition:" + node.getStartPosition());
 
 		// getReturnType2のポジションを取得することでJavadocを除外できる
+		// 嘘，getReturnType2やと返り値の宣言ないやつでぬるぽなっちゃう．
+		// getNameのポジションを取得する！
+		// int start =
+		// compilationUnit.getLineNumber(node.getReturnType2().getStartPosition())
+		// -1;
 		int start = compilationUnit
-				.getLineNumber(node.getReturnType2().getStartPosition()) - 1;
+				.getLineNumber(node.getName().getStartPosition()) - 1;
 		int end = compilationUnit
 				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
 		// System.out.println("start is : " + start);
@@ -192,6 +204,7 @@ public class Visitor extends ASTVisitor {
 
 					ASTNode moveUp = moveUpToStatement(node);
 					addLineNumber(moveUp);
+					// System.out.println("moveUp:"+moveUp);
 					if (moveUp != null) {
 						// どのメソッド内におるのかも書きだす
 						addLineNumberStartEnd(moveUpToMethodInvocation(node));
@@ -242,7 +255,10 @@ public class Visitor extends ASTVisitor {
 	 * @return 目的の行
 	 */
 	public MethodDeclaration moveUpToMethodInvocation(ASTNode node) {
-		// System.out.print("辿るで: "+node.getParent());
+		// TODO: メソッド呼び出しまで戻れなかったときの処理書く
+		if (node.getParent() == null)
+			return null;
+		// System.out.print("辿るで: " + node.getParent());
 		// System.out.println(node.getParent().getClass().toString());
 
 		// if (! (node.getParent() instanceof MethodInvocation)) {
