@@ -86,8 +86,7 @@ public class Visitor extends ASTVisitor {
 	public boolean visit(CompilationUnit node) {
 		if (ast) {
 			// 構文エラーがあった場合
-			if ((node.getFlags()
-					& ASTNode.MALFORMED) == ASTNode.MALFORMED) {
+			if ((node.getFlags() & ASTNode.MALFORMED) == ASTNode.MALFORMED) {
 				// System.out.println("構文エラー！ "+ (node.getFlags() &
 				// CompilationUnit.MALFORMED));
 				SyntaxFlg = false;
@@ -118,6 +117,7 @@ public class Visitor extends ASTVisitor {
 		if (node == null)
 			return;
 
+		// System.out.println("addLineNumberrrrrr");
 		int start = compilationUnit.getLineNumber(node.getStartPosition()) - 1;
 		int end = compilationUnit
 				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
@@ -148,6 +148,10 @@ public class Visitor extends ASTVisitor {
 		// int start =
 		// compilationUnit.getLineNumber(node.getReturnType2().getStartPosition())
 		// -1;
+		System.out.println("node.getName():" + node.getName());
+		System.out.println("node.getName().getStartPosition()"
+				+ node.getName().getStartPosition());
+
 		int start = compilationUnit
 				.getLineNumber(node.getName().getStartPosition()) - 1;
 		int end = compilationUnit
@@ -156,6 +160,50 @@ public class Visitor extends ASTVisitor {
 		// System.out.println("end is : " + end);
 		lineNumbers.add(start);
 		lineNumbers.add(end);
+	}
+
+	// nodeの最初と最後まで全部の行番号を書き出す
+	// javadocは無視
+	private void addLineNumberofMethod(MethodDeclaration node) {
+		if (node == null)
+			return;
+		// getReturnType2のポジションを取得することでJavadocを除外できる
+		// int start =
+		// compilationUnit.getLineNumber(node.getReturnType2().getStartPosition())
+		// -1;
+
+		// 嘘，getReturnType2やと返り値の宣言ないやつでぬるぽなっちゃう．
+		// getNameのポジションを取得する！
+		// System.out.println("node.getName():" + node.getName());
+		// System.out.println("node.getName().getStartPosition():"+
+		// node.getName().getStartPosition());
+		int start = compilationUnit
+				.getLineNumber(node.getName().getStartPosition()) - 1;
+
+		// メソッドがアノテーションを持っているかどうか
+		// System.out.println(node.modifiers().get(0));
+		String modify = node.modifiers().get(0).toString();
+		boolean methodHasAnnotation = false;
+		if (modify != null && modify.startsWith("@")) {
+			// System.out.println("@始まり");
+			methodHasAnnotation = true;
+		}
+
+		// System.out.println("node.getExtra:"+node.getExtraDimensions());
+		// System.out.println("node.getModifier"+node.getModifiers());
+		// メソッドかつアノテーションが指定された場合，スタート位置はアノテーションにする
+		if (anno && methodHasAnnotation) {
+			// System.out.println("anno && has");
+			start = compilationUnit.getLineNumber(node.getExtraDimensions());
+		}
+
+		int end = compilationUnit
+				.getLineNumber(node.getStartPosition() + node.getLength()) - 1;
+		// System.out.println("start is : " + start);
+		// System.out.println("end is : " + end);
+		for (int i = start; i <= end; i++) {
+			lineNumbers.add(i);
+		}
 	}
 
 	// nodeの元ファイルにおける行番号を削除する
@@ -295,13 +343,13 @@ public class Visitor extends ASTVisitor {
 		for (Method method : query.methods) {
 			if (node.getName().toString().equals(method.name)) {
 				// Join all modifiers and parameters.
-				addLineNumber(node);
+				// addLineNumber(node);
+				addLineNumberofMethod(node);
 			}
 		}
 		// 構文エラーがあった場合
 		// TODO ASTNode.MALTORMEDで動くのか確認
-		if ((node.getFlags()
-				& ASTNode.MALFORMED) == ASTNode.MALFORMED) {
+		if ((node.getFlags() & ASTNode.MALFORMED) == ASTNode.MALFORMED) {
 			// System.out.println("構文エラー！ "+ (node.getFlags() &
 			// CompilationUnit.MALFORMED));
 			SyntaxFlg = false;
@@ -309,36 +357,39 @@ public class Visitor extends ASTVisitor {
 		return true;
 	}
 
-	// アノテーション
-	@Override
-	public boolean visit(MarkerAnnotation node) {
-		// @Overrideとか
+	/**
+	 * @param node
+	 */
+	// アノテーションで行う処理まとめてる
+	public void annoVisit(ASTNode node) {
+		// System.out.println("アノテーション呼び出し");
+		if (hasSpecificQuery() && !anno)
+			return;
 		if (anno) {
 			addLineNumber(node);
 		} else {
 			removeLineNumber(node);
 		}
+	}
+
+	// アノテーション
+	@Override
+	public boolean visit(MarkerAnnotation node) {
+		// @Overrideとか
+		annoVisit(node);
 		return true;
 	}
 
 	@Override
 	public boolean visit(NormalAnnotation node) {
-		if (anno) {
-			addLineNumber(node);
-		} else {
-			removeLineNumber(node);
-		}
+		annoVisit(node);
 		return true;
 	}
 
 	@Override
 	public boolean visit(SingleMemberAnnotation node) {
 		// @SuppressWarnings("unchecked")とか
-		if (anno) {
-			addLineNumber(node);
-		} else {
-			removeLineNumber(node);
-		}
+		annoVisit(node);
 		return true;
 	}
 
