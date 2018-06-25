@@ -148,9 +148,9 @@ public class Visitor extends ASTVisitor {
 		// int start =
 		// compilationUnit.getLineNumber(node.getReturnType2().getStartPosition())
 		// -1;
-		System.out.println("node.getName():" + node.getName());
-		System.out.println("node.getName().getStartPosition()"
-				+ node.getName().getStartPosition());
+		//System.out.println("node.getName():" + node.getName());
+		// System.out.println("node.getName().getStartPosition()"+
+		// node.getName().getStartPosition());
 
 		int start = compilationUnit
 				.getLineNumber(node.getName().getStartPosition()) - 1;
