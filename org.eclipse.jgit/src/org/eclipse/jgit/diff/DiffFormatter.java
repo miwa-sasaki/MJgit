@@ -996,7 +996,7 @@ public class DiffFormatter implements AutoCloseable {
 		// header lines, but avoiding its hunks. Instead we recreate
 		// the hunks from the text instances we have been supplied.
 
-		// TODO:このぬるぽ対策適当
+		// TODO:このぬるぽ対策適当．ちゃんとせなあかん
 		// -cxと-pを同時実行するとぬるぽ起こる
 		if (head == null) {
 			return;
@@ -1401,17 +1401,18 @@ public class DiffFormatter implements AutoCloseable {
 					lineB = "";
 				}
 
-//				if((lineA != null && lineB == null) || (lineA == null && lineB != null)) {
-//					//片方null
-//					System.out.println("最初のチェック．片方null");
-//					return true;
-//				} else if (lineA == null && lineB == null) {
-//					//両方null
-//					System.out.println("最初のチェック，両方null");
-//					return false;
-//				}
+				// if((lineA != null && lineB == null) || (lineA == null &&
+				// lineB != null)) {
+				// //片方null
+				// System.out.println("最初のチェック．片方null");
+				// return true;
+				// } else if (lineA == null && lineB == null) {
+				// //両方null
+				// System.out.println("最初のチェック，両方null");
+				// return false;
+				// }
 				// // 両方not null
-//				System.out.println("両方not null");
+				// System.out.println("両方not null");
 
 				// A,B両方1行進めるループ
 				while (lineA != null && lineB != null) {
