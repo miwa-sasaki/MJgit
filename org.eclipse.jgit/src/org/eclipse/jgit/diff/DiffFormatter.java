@@ -1273,7 +1273,17 @@ public class DiffFormatter implements AutoCloseable {
 				// ////ここから改変//////
 
 				// 一時ファイルとかおく場所
-				String filePlace = "/Users/miwaaa8/Documents/研究/workspace/files/"; //$NON-NLS-1$
+				// 絶対パス
+				//String filePlace = "/Users/miwaaa8/Documents/研究/workspace/files/"; //$NON-NLS-1$
+
+				// 相対パスっぽいもの
+				// カントディレクトリのパスを取得
+				String path = new File(".").getAbsoluteFile().getParent();
+				// System.out.println(path);
+				String filePlace = path + "/MJgit_tmp/"; //$NON-NLS-1$
+				// 一時ファイル置く場所作成
+				File newfile = new File(filePlace);
+				newfile.mkdir();
 
 				//cxオプションの有無
 				// -1はオプションなし．普通にdiff実行やから拡張処理とばす
@@ -1313,7 +1323,7 @@ public class DiffFormatter implements AutoCloseable {
 						bRaw = bRawS.getBytes("UTF-8"); //$NON-NLS-1$
 
 					} else {
-						if (isCommentPrintedFlg)
+						// if (isCommentPrintedFlg)
 							System.out.println("構文エラーあり"); //$NON-NLS-1$
 					}
 
