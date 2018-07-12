@@ -1595,10 +1595,15 @@ public class DiffFormatter implements AutoCloseable {
 		// String[] sources = { "D:\\tmp\\astnode\\example" };
 		// String[] classpath = { "C:\\pbl\\java\\jre\\lib\\rt.jar" };
 		// わいの
-		String[] sources = {
-				"\\Users\\miwaaa8\\Documents\\研究\\workspace\\astnode\\example" };
-		String[] classpath = {
-				"\\Library\\Java\\JavaVirtualMachines\\jdk1.8.0_25.jdk\\Contents\\Home\\jre\\lib\\rt.jar" };
+		//String[] sources = {
+		//		"\\Users\\miwaaa8\\Documents\\研究\\workspace\\astnode\\example" };
+		String[] sources = { "" };
+
+		// String[] classpath = {
+		// "\\Library\\Java\\JavaVirtualMachines\\jdk1.8.0_25.jdk\\Contents\\Home\\jre\\lib\\rt.jar"
+		// };
+		String[] classpath = { "" };
+		// System.out.println("環境設定クリア");
 
 		parser.setEnvironment(classpath, sources, new String[] { "UTF-8" },
 				true);
